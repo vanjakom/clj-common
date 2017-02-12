@@ -1,6 +1,7 @@
 (ns clj-common.path)
 
 ; path represents seq of string or keyword elements
+; path's are always absolute, no need to start with /
 
 (defn path2string [path]
   (str "/" (clojure.string/join "/" path)))

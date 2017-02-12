@@ -1,5 +1,7 @@
 (ns clj-common.clojure)
 
+(require '[clj-common.exception :as exception])
+
 ; from early days :)
 (defn not-nil? [value]
   (some? value))
@@ -20,6 +22,9 @@
     concat
     coll))
 
+(defn print-return [value]
+  (println value)
+  value)
 
 (defmacro multiple-do
   "example:
@@ -39,24 +44,52 @@
            2
            ~bindings)))))
 
-(defmacro multiple-reduce
+;(defmacro multiple-reduce
+;  "example:
+;  (multiple-reduce [
+;                     :inc 0 #(+ %1 (inc %2))
+;                     :dec 0 #(+ %1 (dec %2))]
+;                   '(1 2 3))"
+;  [bindings coll]
+;  `(reduce
+;     (fn [state# value#]
+;       (exception/with-data {:state state# :value value#}
+;         (apply
+;           array-map
+;           (flatten-one-level
+;             (map
+;               (fn [[key# default# func#]]
+;                 [key# (func# (get state# key# default#) value#)])
+;               (partition
+;                 3
+;                 ~bindings))))))
+;     {}
+;     ~coll))
+
+(defn multiple-reduce
   "example:
   (multiple-reduce [
                      :inc 0 #(+ %1 (inc %2))
                      :dec 0 #(+ %1 (dec %2))]
                    '(1 2 3))"
   [bindings coll]
-  `(reduce
-     (fn [state# value#]
-       (apply
-         array-map
-         (flatten-one-level
-           (map
-             (fn [[key# default# func#]]
-               [key# (func# (get state# key# default#) value#)])
-             (partition
-               3
-               ~bindings)))))
-     {}
-     ~coll))
+  (reduce
+    (fn [state value]
+      (exception/with-data {:state state :value value}
+        (apply
+          array-map
+          (flatten-one-level
+            (map
+              (fn [[key start func]]
+                [key (func (get state key start) value)])
+              (partition
+                3
+                bindings))))))
+    {}
+    coll))
+
+
+
+(defn starts-upper-case [string]
+  (Character/isUpperCase (.codePointAt string 0)))
 
