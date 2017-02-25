@@ -34,5 +34,6 @@
   (json/write object writer))
 
 (defn write-to-stream [object output-stream]
-  (with-open [writer (io/output-stream2writer output-stream)]
-    (json/write object writer)))
+  (let [writer (io/output-stream2writer output-stream)]
+    (json/write object writer)
+    (.flush writer)))

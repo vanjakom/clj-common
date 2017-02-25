@@ -22,6 +22,11 @@
   [path]
   (new java.io.FileOutputStream (path2string path)))
 
+(defn output-stream-by-appending
+  "Creates output stream for given path by appending"
+  [path]
+  (new java.io.FileOutputStream (path2string path) true))
+
 (defn is-directory
   "Checks if given path represents directory"
   [path]
