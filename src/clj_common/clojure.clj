@@ -6,6 +6,9 @@
 (defn not-nil? [value]
   (some? value))
 
+(defn not-empty? [value]
+  (not (empty? value)))
+
 ; http://stackoverflow.com/questions/11676120/why-dont-when-let-and-if-let-support-multiple-bindings-by-default
 (defmacro if-let*
   ([bindings then]
@@ -21,6 +24,13 @@
   (apply
     concat
     coll))
+
+(defmacro timed-fn [name & exprs]
+  `(let [start# (System/nanoTime)]
+    (let [result# ~@exprs
+          duration# (/ (- (System/nanoTime) start#) 1000000.0)]
+      (println ~name " duration: " duration#)
+      result#)))
 
 (defn print-return [value]
   (println value)

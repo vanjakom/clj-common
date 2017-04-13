@@ -1,5 +1,8 @@
 (ns clj-common.repl)
 
+(require '[clj-common.path :as path])
+(require 'clojure.pprint)
+
 (defn is-static [field-or-method]
   (java.lang.reflect.Modifier/isStatic (.getModifiers field-or-method)))
 
@@ -29,3 +32,8 @@
 
 (defn print-class [clazz]
   (clojure.pprint/pprint (analyze-class clazz)))
+
+(defn jvm-local-path
+  "Returns path from which JVM is started"
+  []
+  (path/path4string (System/getProperty "user.dir")))
