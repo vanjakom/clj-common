@@ -1,6 +1,6 @@
 (defproject com.mungolab/clj-common "0.1.0-SNAPSHOT"
-  :description "FIXME: write description"
-  :url "http://example.com/FIXME"
+  :description "common functions"
+  :url "https://github.com/vanjakom/clj-common"
   :license {:name "Eclipse Public License"
             :url "http://www.eclipse.org/legal/epl-v10.html"}
   :dependencies [
