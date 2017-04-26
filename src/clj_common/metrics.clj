@@ -54,6 +54,17 @@
       "/threads")
     (.start server)))
 
+(defn create-and-attach-graphite-reporter [metrics graphite-host graphite-port prefix]
+  (let [graphite (new com.codahale.metrics.graphite.Graphite graphite-host graphite-port)
+        reporter (->
+                   (com.codahale.metrics.graphite.GraphiteReporter/forRegistry (:metrics-registry metrics))
+                   (.prefixedWith prefix)
+                   (.convertRatesTo java.util.concurrent.TimeUnit/SECONDS)
+                   (.convertDurationsTo java.util.concurrent.TimeUnit/MILLISECONDS)
+                   (.filter com.codahale.metrics.MetricFilter/ALL)
+                   (.build graphite))]
+    (.start reporter 1 java.util.concurrent.TimeUnit/MINUTES)))
+
 (def ^:dynamic *metrics* (create-console-metrics))
 
 (defn inc-counter [name]

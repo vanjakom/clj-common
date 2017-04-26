@@ -12,10 +12,10 @@
 
                   [commons-io/commons-io "2.5"]
 
-                  [io.dropwizard.metrics/metrics-core "3.1.2"]
-                  [io.dropwizard.metrics/metrics-graphite "3.1.2"]
-                  [io.dropwizard.metrics/metrics-servlets "3.1.2"]
-                  [org.eclipse.jetty/jetty-server "9.3.4.v20151007"]
-                  [org.eclipse.jetty/jetty-servlet "9.3.4.v20151007"]]
+                  [io.dropwizard.metrics/metrics-core "3.2.2"]
+                  [io.dropwizard.metrics/metrics-graphite "3.2.2"]
+                  [io.dropwizard.metrics/metrics-servlets "3.2.2"]
+                  [org.eclipse.jetty/jetty-server "9.4.4.v20170414"]
+                  [org.eclipse.jetty/jetty-servlet "9.4.4.v20170414"]]
   :repl-options {
                   :nrepl-middleware [lighttable.nrepl.handler/lighttable-ops]})
