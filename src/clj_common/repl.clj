@@ -37,3 +37,7 @@
   "Returns path from which JVM is started"
   []
   (path/path4string (System/getProperty "user.dir")))
+
+(defn print-seq [seq]
+  (doseq [elem seq]
+    (println elem)))

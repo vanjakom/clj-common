@@ -1,5 +1,8 @@
 (ns clj-common.io)
 
+(defn byte2input-stream [byte-array]
+  (new java.io.ByteArrayInputStream byte-array))
+
 (defn string2input-stream [str-value]
   (new java.io.ByteArrayInputStream (.getBytes str-value)))
 

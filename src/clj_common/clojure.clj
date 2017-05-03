@@ -25,15 +25,6 @@
     concat
     coll))
 
-(defmacro timed-fn [name & exprs]
-  `(let [start# (System/nanoTime)]
-    (let [result# ~@exprs
-          duration# (/ (- (System/nanoTime) start#) 1000000.0)]
-      (println ~name " duration: " duration#)
-      result#)))
-
-
-
 (defn print-return [value]
   (println value)
   value)

@@ -10,3 +10,16 @@
 		(if (< timestamp 1000000000000)
 			(clj-time.coerce/from-long (* timestamp 1000))
 			(clj-time.coerce/from-long timestamp))) " GMT"))
+
+(defmacro timed-fn [name & exprs]
+  `(let [start# (System/nanoTime)]
+    (let [result# ~@exprs
+          duration# (/ (- (System/nanoTime) start#) 1000000.0)]
+      (println ~name " duration: " duration#)
+      result#)))
+
+(defmacro timed-response-fn [& exprs]
+  `(let [start# (System/nanoTime)]
+    (let [result# ~@exprs
+          duration# (/ (- (System/nanoTime) start#) 1000000.0)]
+      [duration# result#])))
