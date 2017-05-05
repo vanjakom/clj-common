@@ -1,6 +1,5 @@
 (ns clj-common.metrics)
 
-
 (defn create-console-metrics []
   (let [counters (atom {})]
     {
@@ -27,6 +26,25 @@
 
       ; codahale specific
       :metrics-registry metrics-registry}))
+
+(defn print-codahale-metrics [metrics]
+  (let [registry (:metrics-registry metrics)
+        counters (.getCounters registry)
+        timers (.getTimers registry)]
+    (println "=== Registry ===")
+    (println "=== Counters")
+    (doseq [counter-pair counters]
+      (println "counter: " (.getKey counter-pair) " value: " (.getCount (.getValue counter-pair))))
+    (println "=== Timers")
+    (doseq [timer-pair timers]
+      (let [name (.getKey timer-pair)
+            timer (.getValue timer-pair)
+            snapshot (.getSnapshot timer)]
+        (println "timer: " name
+                 " min: " (/ (.getMin snapshot) 1000000.0) "ms"
+                 " avg: " (/ (.getMean snapshot) 1000000.0) "ms"
+                 " max: " (/ (.getMax snapshot) 1000000.0) "ms"
+                 " count: " (.getCount timer))))))
 
 (defn create-and-attach-console-reporter [metrics]
   (let [console-reporter (->
