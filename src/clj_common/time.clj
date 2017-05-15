@@ -15,7 +15,7 @@
   `(let [start# (System/nanoTime)]
     (let [result# ~@exprs
           duration# (/ (- (System/nanoTime) start#) 1000000.0)]
-      (println ~name " duration: " duration#)
+      (println ~name " duration: " duration# "ms")
       result#)))
 
 (defmacro timed-response-fn [& exprs]

@@ -41,3 +41,26 @@
 (defn print-seq [seq]
   (doseq [elem seq]
     (println elem)))
+
+
+(defmacro fn-with-source [& definition]
+  (println "form: " &form)
+  (println "definition: " definition)
+  `(with-meta
+     (clojure.core/fn ~@definition)
+     {
+       :source (quote ~&form)}))
+
+(defmacro defn-with-source [fn-name & definition]
+  (println "form: " &form)
+  (println "name: " fn-name)
+  (println "class: " (class fn-name))
+  (println "definition: " definition)
+  (let [fn-name-str (name fn-name)]
+    `(with-meta
+       (clojure.core/fn ~@definition)
+       {
+         :source (quote ~&form)
+         :namespace (.getName *ns*)
+         :name ~fn-name-str})))
+

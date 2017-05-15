@@ -3,14 +3,19 @@
 ; path represents seq of string or keyword elements
 ; path's are always absolute, no need to start with /
 
-(defn path2string [path]
+(defn path->string [path]
   (str "/" (clojure.string/join "/" path)))
 
-(defn path4string [path-str]
+(defn string->path [path-str]
   (let [splits (clojure.string/split path-str #"/")]
     (if (empty? (first splits))
       (into [] (rest splits))
       splits)))
+
+; old naming
+(def path2string path->string)
+
+(def path4string string->path)
 
 (defn parent [path]
   (into [] (drop-last path)))

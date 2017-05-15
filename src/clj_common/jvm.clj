@@ -10,6 +10,10 @@
       :max-memory max-memory
       :total-memory total-memory}))
 
+(defn get-threads []
+  (let [stack-traces (Thread/getAllStackTraces)]
+    (into [] (.keySet stack-traces))))
+
 (defn print-memory []
   (let [{
           free-memory :free-memory
@@ -22,3 +26,8 @@
       (int (/ max-memory 1024 1024)) "MB max, "
       (int (/ total-memory 1024 1024)) "MB total")))
 
+(defn print-threads []
+  (let [threads (get-threads)]
+    (println "Threads: ")
+    (doseq [thread threads]
+      (println "Thread: " (.getName thread) " state: " (.getState thread)))))

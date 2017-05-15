@@ -4,8 +4,8 @@
   (let [counters (atom {})]
     {
       :inc-counter
-      (fn [name]
-        (let [new-val (swap! counters #(assoc %1 name (inc (get %1 name 0))))]
+      (fn [name value]
+        (let [new-val (swap! counters #(assoc %1 name (+ (get %1 name 0) value)))]
           (println "counter: " name ": " (get new-val name))))
       :report-timer
       (fn [name duration]
@@ -18,8 +18,8 @@
   (let [metrics-registry (new com.codahale.metrics.MetricRegistry)]
     {
       :inc-counter
-      (fn [name]
-        (.inc (.counter metrics-registry name)))
+      (fn [name value]
+        (.inc (.counter metrics-registry name) value))
       :report-timer
       (fn [name duration]
         (.update (.timer metrics-registry name) duration java.util.concurrent.TimeUnit/MILLISECONDS))
@@ -86,7 +86,10 @@
 (def ^:dynamic *metrics* (create-console-metrics))
 
 (defn inc-counter [name]
-  ((:inc-counter *metrics*) name))
+  ((:inc-counter *metrics*) name 1))
+
+(defn inc-counter-by [name value]
+  ((:inc-counter *metrics*) name value))
 
 (defn report-timer [name duration]
   ((:report-timer *metrics*) name duration))

@@ -38,3 +38,7 @@
 
 (defn copy-input-to-output-stream [input-stream output-stream]
   (clojure.java.io/copy input-stream output-stream))
+
+(defn url2input-stream [url-string]
+  (let [url (new java.net.URL url-string)]
+    (.openStream url)))
