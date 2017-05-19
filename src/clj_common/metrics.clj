@@ -46,6 +46,12 @@
                  " max: " (/ (.getMax snapshot) 1000000.0) "ms"
                  " count: " (.getCount timer))))))
 
+(defn add-jvm-gauges [metrics]
+  (let [registry (:metrics-registry metrics)]
+    (.register registry "jvm.memory" (new com.codahale.metrics.jvm.MemoryUsageGaugeSet))
+    (.register registry "jvm.thread-states" (new com.codahale.metrics.jvm.ThreadStatesGaugeSet))
+    (.register registry "jvm.gc" (new com.codahale.metrics.jvm.GarbageCollectorMetricSet))))
+
 (defn create-and-attach-console-reporter [metrics]
   (let [console-reporter (->
                            (com.codahale.metrics.ConsoleReporter/forRegistry (:metrics-registry metrics))
