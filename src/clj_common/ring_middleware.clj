@@ -9,7 +9,6 @@
 (defn post-body-as-string-middleware [handler]
   (fn [request]
     (let [line (slurp (:body request))]
-      (println "line: " line)
       (handler
         (assoc
           request
