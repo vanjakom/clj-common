@@ -26,6 +26,9 @@
       (int (/ max-memory 1024 1024)) "MB max, "
       (int (/ total-memory 1024 1024)) "MB total")))
 
+(defn get-pid []
+  (.getName (java.lang.management.ManagementFactory/getRuntimeMXBean)))
+
 (defn print-threads []
   (let [threads (get-threads)]
     (println "Threads: ")

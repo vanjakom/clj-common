@@ -91,6 +91,10 @@
     {}
     coll))
 
+(defn assoc-if-value [map key value]
+  (if (some? value)
+    (assoc map key value)
+    map))
 
 
 (defn starts-upper-case [string]

@@ -34,6 +34,9 @@
         file-object (new java.io.File path-string)]
     (.isDirectory file-object)))
 
+(defn relative-path->path [relative-path]
+  (.getCanonicalPath (new java.io.File relative-path)))
+
 (defn list
   "List paths on given path if directory, if file or doesn't exist empty list is returned"
   [path]

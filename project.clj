@@ -11,6 +11,7 @@
                   [clj-http "2.2.0"]
 
                   [commons-io/commons-io "2.5"]
+                  [commons-codec/commons-codec "1.10"]
 
                   [io.dropwizard.metrics/metrics-core "3.2.2"]
                   [io.dropwizard.metrics/metrics-graphite "3.2.2"]

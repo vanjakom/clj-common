@@ -27,8 +27,10 @@
     java.io.BufferedWriter
     (new java.io.OutputStreamWriter output-stream)))
 
-(defn input-stream2bytes [input-stream]
+(defn input-stream->byte-array [input-stream]
   (org.apache.commons.io.IOUtils/toByteArray input-stream))
+
+(def input-stream2bytes input-stream->byte-array)
 
 (defn input-stream2string [input-stream]
   (org.apache.commons.io.IOUtils/toString input-stream))
@@ -42,3 +44,6 @@
 (defn url2input-stream [url-string]
   (let [url (new java.net.URL url-string)]
     (.openStream url)))
+
+(defn write [output-stream bytes]
+  (.write output-stream bytes))
