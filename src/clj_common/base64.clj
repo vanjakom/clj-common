@@ -7,3 +7,6 @@
 
 (defn base64->string [^String base64-as-string]
   (new String (base64->byte-array base64-as-string)))
+
+(defn byte-array->base64-string [byte-aray]
+  (org.apache.commons.codec.binary.Base64/encodeBase64String byte-aray))

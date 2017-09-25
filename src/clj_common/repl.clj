@@ -1,6 +1,10 @@
 (ns clj-common.repl)
 
 (require '[clj-common.path :as path])
+(require '[clj-common.io :as io])
+(require '[clj-common.localfs :as fs])
+(require '[clj-common.jvm :as jvm])
+
 (require 'clojure.pprint)
 
 (defn is-static [field-or-method]
@@ -33,11 +37,6 @@
 (defn print-class [clazz]
   (clojure.pprint/pprint (analyze-class clazz)))
 
-(defn jvm-local-path
-  "Returns path from which JVM is started"
-  []
-  (path/path4string (System/getProperty "user.dir")))
-
 (defn print-seq [seq]
   (doseq [elem seq]
     (println elem)))
@@ -63,4 +62,14 @@
          :source (quote ~&form)
          :namespace (.getName *ns*)
          :name ~fn-name-str})))
+
+(defn nrepl-port []
+  ; until better solution is found
+  (let [port-file-path (path/child
+                         (jvm/jvm-path)
+                         ".nrepl-port")]
+    (if (fs/exists? port-file-path)
+      (Long/parseLong
+        (io/input-stream->string
+          (fs/input-stream port-file-path))))))
 

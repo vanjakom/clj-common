@@ -2,7 +2,7 @@
 
 (use 'clj-common.path)
 
-(defn exists
+(defn exists?
   "Checks if path exists on local fs"
   [path]
   (.exists (new java.io.File (path2string path))))

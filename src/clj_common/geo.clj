@@ -45,6 +45,11 @@
         c
         1000))))
 
+(defn distance->human-string [distance]
+  (cond
+    (> distance 1000) (str (long (/ distance 1000)) "km")
+    :else (str distance "m")))
+
 (def distance-two-locations distance)
 
 (defn speed-km [location1 location2]
@@ -112,4 +117,23 @@
         latitude-span (- (:max-latitude aggregate) (:min-latitude aggregate))
         center-latitude (+ (:min-latitude aggregate) (/ latitude-span 2))]
     [center-longitude center-latitude longitude-span latitude-span]))
+
+(defn location-seq->longitude-latitude-radius [location-seq]
+  (let [first-location (first location-seq)
+        aggregate (multiple-reduce
+                    [:max-longitude (:longitude first-location) max-aggregate-longitude
+                     :min-longitude (:longitude first-location) min-aggregate-longitude
+                     :max-latitude (:latitude first-location) max-aggregate-latitude
+                     :min-latitude (:latitude first-location) min-aggregate-latitude]
+                    location-seq)]
+    [
+      (+
+        (:min-longitude aggregate)
+        (/ (- (:max-longitude aggregate) (:min-longitude aggregate)) 2))
+      (+
+        (:min-latitude aggregate)
+        (/ (- (:max-latitude aggregate) (:min-latitude aggregate)) 2))
+      (distance
+        {:longitude (:min-longitude aggregate) :latitude (:min-latitude aggregate)}
+        {:longitude (:max-longitude aggregate) :latitude (:max-latitude aggregate)})]))
 

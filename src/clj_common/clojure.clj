@@ -47,6 +47,17 @@
            2
            ~bindings)))))
 
+(defn count-by-each [key-fn coll]
+  (reduce
+    (fn [state entry]
+      (reduce
+        (fn [state key]
+          (update-in state [key] #(inc (or %1 0))))
+        state
+        (key-fn entry)))
+    {}
+    coll))
+
 ;(defmacro multiple-reduce
 ;  "example:
 ;  (multiple-reduce [
@@ -100,3 +111,21 @@
 (defn starts-upper-case [string]
   (Character/isUpperCase (.codePointAt string 0)))
 
+; taken from
+; https://stackoverflow.com/questions/9086926/create-a-proxy-for-an-specific-instance-of-an-object-in-clojure
+
+(defmacro proxy-object
+  [type delegate & body]
+  (let [d (gensym)
+        overrides (group-by first body)
+        methods (for [m (.getMethods (resolve type))
+                      :let [f (-> (.getName m)
+                                symbol
+                                (with-meta {:tag (-> m .getReturnType .getName)}))]
+                      :when (not (overrides f))
+                      :let [args (for [t (.getParameterTypes m)]
+                                   (with-meta (gensym) {:tag (.getName t)}))]]
+                  (list f (vec (conj args 'this))
+                    `(. ~d ~f ~@(map #(with-meta % nil) args))))]
+    `(let [~d ~delegate]
+       (reify ~type ~@body ~@methods))))

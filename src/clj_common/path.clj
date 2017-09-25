@@ -26,19 +26,19 @@
 (defn name [path]
   (last path))
 
+(defn name->name-extension [name]
+  (let [last-index (.lastIndexOf name ".")]
+    (if (>= last-index 0)
+      [(.substring name 0 last-index) (.substring name (inc last-index))]
+      [name nil])))
+
 (defn extension [path]
-  (let [path-name (name path)
-        splits (clojure.string/split path-name #"\.")]
-    (if (= (count splits) 2)
-      (last splits)
-      nil)))
+  (let [[name-without-extension extension] (name->name-extension (name path))]
+    extension))
 
 (defn name-without-extension [path]
-  (let [path-name (name path)
-        splits (clojure.string/split path-name #"\.")]
-    (if (= (count splits) 2)
-      (first splits)
-      path-name)))
+  (let [[name-without-extension extension] (name->name-extension (name path))]
+    name-without-extension))
 
 (defn sort-by-name-without-extension
   "Sorts list of paths by part of name applying extract fn

@@ -11,6 +11,12 @@
 			(clj-time.coerce/from-long (* timestamp 1000))
 			(clj-time.coerce/from-long timestamp))) " GMT"))
 
+(defn millis->seconds [timestamp]
+  (long (/ timestamp 1000)))
+
+(defn seconds->millis [timestamp]
+  (* timestamp 1000))
+
 (defmacro timed-fn [name & exprs]
   `(let [start# (System/nanoTime)]
     (let [result# ~@exprs

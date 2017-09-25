@@ -30,6 +30,13 @@
 (defn write-to-string [object]
   (json/write-str object))
 
+(defn write-lines-to-string [object-seq]
+  (clojure.string/join
+    "\n"
+    (map
+      json/write-str
+      object-seq)))
+
 (defn write-to-writer [object writer]
   (json/write object writer))
 
