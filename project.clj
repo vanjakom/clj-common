@@ -3,6 +3,10 @@
   :url "https://github.com/vanjakom/clj-common"
   :license {:name "Eclipse Public License"
             :url "http://www.eclipse.org/legal/epl-v10.html"}
+  :deploy-repositories [
+                         ["clojars" {
+                                      :url "https://clojars.org"
+                                      :sign-releases false}]]
   :dependencies [
                   [org.clojure/clojure "1.8.0"]
                   [lein-light-nrepl "0.3.2"]
