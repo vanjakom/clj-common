@@ -51,6 +51,7 @@
 (defn get-classpath []
   (System/getProperty "java.class.path"))
 
+; todo potential problem with loader used, using context class loader
 (defn resource-as-stream [path-in-jar]
   (if-let [resource-url (io/resource (.substring (path/path->string path-in-jar) 1))]
     (io/input-stream resource-url)))

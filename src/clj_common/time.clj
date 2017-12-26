@@ -5,17 +5,25 @@
 (defn timestamp []
   (System/currentTimeMillis))
 
-(defn timestamp-date [timestamp]
+(defn timestamp-second []
+  (int (/ (System/currentTimeMillis) 1000)))
+
+(defn timestamp->date [timestamp]
   	(str (.toString
 		(if (< timestamp 1000000000000)
 			(clj-time.coerce/from-long (* timestamp 1000))
 			(clj-time.coerce/from-long timestamp))) " GMT"))
+
+(def timestamp-date  timestamp->date)
+
 
 (defn millis->seconds [timestamp]
   (long (/ timestamp 1000)))
 
 (defn seconds->millis [timestamp]
   (* timestamp 1000))
+
+
 
 (defmacro timed-fn [name & exprs]
   `(let [start# (System/nanoTime)]

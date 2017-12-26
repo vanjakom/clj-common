@@ -23,6 +23,12 @@
 
 (def input-stream2buffered-reader input-stream->buffered-reader)
 
+(defn input-stream->pushback-reader [input-stream]
+  (new
+    java.io.PushbackReader
+    (new
+      java.io.InputStreamReader input-stream)))
+
 (defn output-stream2writer [output-stream]
   (new java.io.OutputStreamWriter output-stream))
 
@@ -83,32 +89,12 @@
           (proxy-super read bytes off len))))))
 
 
-
-
-; class SequenceInputStream
-; converts sequence of String, InputStream,
-; Future<String>, Future<InputStream>, Sequence of any
-
-; links
-; https://gist.github.com/puredanger/9cc4304a43de9a67171b
-; https://clojuredocs.org/clojure.core/gen-class
-; https://clojuredocs.org/clojure.core/proxy
-; http://puredanger.github.io/tech.puredanger.com/2011/08/12/subclassing-in-clojure/
-
-(gen-class
-  :name "com.mungolab.common.io.SequenceInputStream"
-  :extends java.io.InputStream
-  :state state
-  :constructors { [clojure.lang.Seqable] []}
-  :exposes-methods {read readSuper}
-  :prefix "seq-is-"
-  :main false
-  :init init)
-
 (defn streamable->input-stream [coll]
   (let [next-streamable (first coll)
         rest-coll (rest coll)]
     (cond
+      (nil? next-streamable)
+        (streamable->input-stream rest-coll)
       (instance? java.lang.String next-streamable)
         [(string->input-stream next-streamable) rest-coll]
       (instance? java.util.concurrent.Future next-streamable)
@@ -123,29 +109,130 @@
         [(string->input-stream (str next-streamable)) rest-coll]
       :else nil)))
 
-(defn seq-is-init [coll]
-  [[] (ref (streamable->input-stream coll))])
 
-(defn seq-is-read
-  ([this]
-   (let [[current-stream coll] @(.state this)]
-     (if (some? current-stream)
-       (let [next-byte (.read current-stream)]
-         (if
-           (= next-byte -1)
-           (if (empty? coll)
-             -1
-             (do
-               (dosync
-                 (ref-set
-                   (.state this)
-                   (streamable->input-stream coll)))
-               (seq-is-read this)))
-           next-byte))
-       -1)))
-  ([this bytes] (.readSuper this bytes))
-  ([this bytes off len] (.readSuper this bytes off len)))
+; not used any more, clojure implementation of read(bytes) and read(bytes, offset, len)
+; is created and now InputStream is proxied
+; problem with old implementation was gen-class working in compile time and compiling a
+; lot of clj-common code, also with work on https://github.com/vanjakom/saturday-project
+; compiled code was a burden
+; class SequenceInputStream
+; converts sequence of String, InputStream,
+; Future<String>, Future<InputStream>, Sequence of any
+
+; links
+; https://gist.github.com/puredanger/9cc4304a43de9a67171b
+; https://clojuredocs.org/clojure.core/gen-class
+; https://clojuredocs.org/clojure.core/proxy
+; http://puredanger.github.io/tech.puredanger.com/2011/08/12/subclassing-in-clojure/
+
+;(gen-class
+;  :name "com.mungolab.common.io.SequenceInputStream"
+;  :extends java.io.InputStream
+;  :state state
+;  :constructors { [clojure.lang.Seqable] []}
+;  :exposes-methods {read readSuper}
+;  :prefix "seq-is-"
+;  :main false
+;  :init init)
+
+;(defn seq-is-init [coll]
+;  [[] (ref (streamable->input-stream coll))])
+
+;(defn seq-is-read
+;  ([this]
+;   (let [[current-stream coll] @(.state this)]
+;     (if (some? current-stream)
+;       (let [next-byte (.read current-stream)]
+;         (if
+;           (= next-byte -1)
+;           (if (empty? coll)
+;             -1
+;             (do
+;               (dosync
+;                 (ref-set
+;                   (.state this)
+;                   (streamable->input-stream coll)))
+;               (seq-is-read this)))
+;           next-byte))
+;       -1)))
+;  ([this bytes] (.readSuper this bytes))
+;  ([this bytes off len] (.readSuper this bytes off len)))
+
+;(defn seq->input-stream [coll]
+;  (new com.mungolab.common.io.SequenceInputStream coll))
+
+
+(defn input-stream-proxy [read-fn]
+  (let [read-in-array-fn (fn [^bytes array off len]
+                           (if (nil? array)
+                             (throw (new NullPointerException)))
+                           (if (or (< off 0) (< len 0) (> len (- (alength array) off)))
+                             (throw (new IndexOutOfBoundsException)))
+                           (if (= len 0)
+                             0
+                             (do
+                               (let [c (read-fn)]
+                                 (if (= c -1)
+                                   -1
+                                   (do
+                                     (aset-byte array (int off) (unchecked-byte c))
+                                     (loop [i 1
+                                            c (read-fn)]
+                                       (if (= c -1)
+                                         i
+                                         (do
+                                           (aset-byte array (int (+ off i)) (unchecked-byte c))
+                                           (if (< (inc i) len)
+                                             (recur (inc i) (read-fn))
+                                             i))))))))))]
+    (proxy [java.io.InputStream] []
+      (read ([] (read-fn))
+            ([^bytes bytes] (read-in-array-fn bytes 0 (alength bytes)))
+            ([^bytes bytes off len] (read-in-array-fn bytes off len))))))
+
 
 (defn seq->input-stream [coll]
-  (new com.mungolab.common.io.SequenceInputStream coll))
+  (let [state (volatile! (streamable->input-stream coll))]
+    (input-stream-proxy
+      (fn read-once []
+        (let [[current-stream coll] @state]
+          (if (some? current-stream)
+            (let [next-byte (.read current-stream)]
+              (if
+                (= next-byte -1)
+                (if (empty? coll)
+                  -1
+                  (do
+                    (vreset!
+                      state
+                      (streamable->input-stream coll))
+                    (read-once)))
+                next-byte))
+            -1))))))
+
+(comment
+  (input-stream->string
+    (seq->input-stream [
+                         "test1"
+                         (new java.io.ByteArrayInputStream (.getBytes "test2"))
+                         "abc"]))
+
+  (input-stream->string
+    (let [original (new java.io.ByteArrayInputStream (.getBytes "test"))]
+      (input-stream-proxy
+        (fn []
+          (.read original)))))
+)
+
+; cache input stream
+; https://stackoverflow.com/questions/5923817/how-to-clone-an-inputstream
+(defn cache-input-stream
+  "Returns fn which on invocation will return InputStream which would produce
+  same data as original one"
+  [input-stream]
+  (let [output-stream (new java.io.ByteArrayOutputStream)]
+    (copy-input-to-output-stream input-stream output-stream)
+    (let [bytes (.toByteArray output-stream)]
+      (fn []
+        (new java.io.ByteArrayInputStream bytes)))))
 

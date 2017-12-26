@@ -1,36 +1,35 @@
-(ns clj-common.localfs)
-
-(use 'clj-common.path)
+(ns clj-common.localfs
+  (:require [clj-common.path :as path]))
 
 (defn exists?
   "Checks if path exists on local fs"
   [path]
-  (.exists (new java.io.File (path2string path))))
+  (.exists (new java.io.File (path/path->string path))))
 
 (defn mkdirs
   "Ensures given path exists, making all non existing dirs"
   [path]
-  (.mkdirs (new java.io.File (path2string path))))
+  (.mkdirs (new java.io.File (path/path->string path))))
 
 (defn input-stream
   "Creates input stream for given path"
   [path]
-  (new java.io.FileInputStream (path2string path)))
+  (new java.io.FileInputStream (path/path->string path)))
 
 (defn output-stream
   "Creates output stream for given path"
   [path]
-  (new java.io.FileOutputStream (path2string path)))
+  (new java.io.FileOutputStream ^String (path/path->string path)))
 
 (defn output-stream-by-appending
   "Creates output stream for given path by appending"
   [path]
-  (new java.io.FileOutputStream (path2string path) true))
+  (new java.io.FileOutputStream (path/path->string path) true))
 
 (defn is-directory
   "Checks if given path represents directory"
   [path]
-  (let [path-string (path2string path)
+  (let [path-string (path/path->string path)
         file-object (new java.io.File path-string)]
     (.isDirectory file-object)))
 
@@ -43,7 +42,7 @@
   (if
     (is-directory path)
     (map
-      (partial child path)
-      (.list (new java.io.File (path2string path))))
+      (partial path/child path)
+      (.list (new java.io.File (path/path->string path))))
     '()))
 

@@ -5,6 +5,9 @@
 (require '[clj-common.localfs :as fs])
 (require '[clj-common.jvm :as jvm])
 
+(require 'clojure.tools.nrepl.server)
+(require 'lighttable.nrepl.handler)
+
 (require 'clojure.pprint)
 
 (defn is-static [field-or-method]
@@ -72,4 +75,18 @@
       (Long/parseLong
         (io/input-stream->string
           (fs/input-stream port-file-path))))))
+
+; useful
+; https://groups.google.com/forum/#!topic/light-table-discussion/PPUtWjV9iY4
+(defn start-lighttable-nrepl-server [port]
+  (clojure.tools.nrepl.server/start-server
+    :port port
+    :handler (clojure.tools.nrepl.server/default-handler #'lighttable.nrepl.handler/lighttable-ops)))
+
+(defn eval-on-nrepl-server [nrepl-port string-to-eval]
+  (with-open [conn (clojure.tools.nrepl/connect :port nrepl-port)]
+   (->
+      (clojure.tools.nrepl/client conn 1000)
+      (clojure.tools.nrepl/message {:op "eval" :code string-to-eval})
+      clojure.tools.nrepl/response-values)))
 

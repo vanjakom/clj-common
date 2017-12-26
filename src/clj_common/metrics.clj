@@ -1,5 +1,6 @@
 (ns clj-common.metrics)
 
+; todo remove console metrics, everything could be done with MetricRegistry
 (defn create-console-metrics []
   (let [counters (atom {})]
     {
@@ -23,14 +24,54 @@
       :report-timer
       (fn [name duration]
         (.update (.timer metrics-registry name) duration java.util.concurrent.TimeUnit/MILLISECONDS))
-
+      :register-gauge
+      (fn [name gauge-fn]
+        (.register
+          metrics-registry
+          name
+          (proxy
+            [com.codahale.metrics.Gauge] []
+            (getValue
+              []
+              (gauge-fn)))))
       ; codahale specific
       :metrics-registry metrics-registry}))
+
+(defn metrics-registry->map [metrics]
+  {
+    :counters
+    (into
+      {}
+      (map
+        (fn [map-entry] [(.getKey map-entry) (.getCount (.getValue map-entry))])
+        (.getCounters metrics)))
+    :timers
+    (into
+      {}
+      (map
+        (fn [map-entry]
+          [
+            (.getKey map-entry)
+            (let [timer (.getValue map-entry)
+                  snapshot (.getSnapshot timer)]
+              {
+                :count (.getCount timer)
+                :min (/ (.getMin snapshot) 1000000.0)
+                :avg (/ (.getMean snapshot) 1000000.0)
+                :max (/ (.getMax snapshot) 1000000.0)})])
+        (.getTimers metrics)))
+    :gauges
+    (into
+      {}
+      (map
+        (fn [map-entry] [(.getKey map-entry) (.getValue (.getValue map-entry))])
+        (.getGauges metrics)))})
 
 (defn print-codahale-metrics [metrics]
   (let [registry (:metrics-registry metrics)
         counters (.getCounters registry)
-        timers (.getTimers registry)]
+        timers (.getTimers registry)
+        gauges (.getGauges registry)]
     (println "=== Registry ===")
     (println "=== Counters")
     (doseq [counter-pair counters]
@@ -44,7 +85,12 @@
                  " min: " (/ (.getMin snapshot) 1000000.0) "ms"
                  " avg: " (/ (.getMean snapshot) 1000000.0) "ms"
                  " max: " (/ (.getMax snapshot) 1000000.0) "ms"
-                 " count: " (.getCount timer))))))
+                 " count: " (.getCount timer))))
+    (println "=== Gauges")
+    (doseq [gauge-pair gauges]
+      (let [name (.getKey gauge-pair)
+            gauge (.getValue gauge-pair)]
+        (println "gauge: " name " value: " (.getValue gauge))))))
 
 (defn add-jvm-gauges [metrics]
   (let [registry (:metrics-registry metrics)]
@@ -99,6 +145,12 @@
 
 (defn report-timer [name duration]
   ((:report-timer *metrics*) name duration))
+
+(defn register-gauge
+  "Registers Gauge with MetricRegistry, gauge-fn should be fn of zero arity
+  returning Gauge value"
+  [name gauge-fn]
+  ((:register-gauge *metrics*) name gauge-fn))
 
 (defmacro eval-and-report-timer [name & exprs]
   `(let [start# (System/nanoTime)]
