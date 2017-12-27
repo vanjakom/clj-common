@@ -27,6 +27,8 @@
                   ; http stack
                   [compojure "1.5.0"]
                   [ring "1.4.0"]
-                  [ring/ring-json "0.4.0" :exclusions [com.fasterxml.jackson.core/jackson-core]]]
+                  [ring/ring-json "0.4.0" :exclusions [com.fasterxml.jackson.core/jackson-core]]
+
+                  [funcool/cats "2.1.0"]]
   :repl-options {
                   :nrepl-middleware [lighttable.nrepl.handler/lighttable-ops]})

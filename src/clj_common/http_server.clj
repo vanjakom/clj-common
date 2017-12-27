@@ -17,6 +17,11 @@
       (fn [request]
         {:status 200
          :body "ok\n"}))
+    (compojure.core/GET
+      "/exception"
+      _
+      (fn [request]
+        (throw (new Exception "On purpose"))))
     (compojure.core/POST
       "/boomerang"
       _
@@ -56,6 +61,10 @@
     {
       :port port
       :join? false}))
+
+(comment
+  (create-server 7090 sample-handler)
+)
 
 (defn stop-server [server]
   (.stop server))
