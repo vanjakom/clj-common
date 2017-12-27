@@ -5,7 +5,7 @@
             :url "http://www.eclipse.org/legal/epl-v10.html"}
   :deploy-repositories [
                          ["clojars" {
-                                      :url "https://clojars.org"
+                                      :url "https://clojars.org/repo"
                                       :sign-releases false}]]
   :dependencies [
                   [org.clojure/clojure "1.8.0"]
