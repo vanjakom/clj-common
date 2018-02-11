@@ -1,11 +1,11 @@
-(ns clj-common.threadpool)
+(ns clj-common.threadpool
+  (:require [cats.monad.either :as either])
+  (:require [clj-common.metrics :as metrics])
+  (:require [clj-common.logging :as logging])
 
-(require '[clj-common.metrics :as metrics])
-(require '[clj-common.logging :as logging])
-
-(import java.util.concurrent.ExecutorService)
-(import java.util.concurrent.Executors)
-(import java.util.concurrent.TimeUnit)
+  (:import java.util.concurrent.ExecutorService)
+  (:import java.util.concurrent.Executors)
+  (:import java.util.concurrent.TimeUnit))
 
 (defn create-fixed-executor [threads-number]
   (Executors/newFixedThreadPool threads-number))
@@ -32,3 +32,20 @@
     ^ExecutorService pool
     ^Callable (execute-wrapper fn-to-execute)))
 
+(defn execute-or-wrapper [fn-to-execute]
+  (let [metrics metrics/*metrics*]
+    (fn []
+      (binding [metrics/*metrics* metrics]
+        (try
+          (fn-to-execute)
+          (catch Throwable e
+            (let [thread-name (.getName (Thread/currentThread))]
+              (logging/report-throwable {:thread thread-name} e)
+              (metrics/inc-counter
+                (str "threadpool." thread-name ".exception"))
+              (either/left e))))))))
+
+(defn execute-or-async [pool fn-to-execute]
+  (.submit
+    ^ExecutorService pool
+    ^Callable (execute-or-wrapper fn-to-execute)))

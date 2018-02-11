@@ -29,6 +29,9 @@
                   [ring "1.4.0"]
                   [ring/ring-json "0.4.0" :exclusions [com.fasterxml.jackson.core/jackson-core]]
 
+                  ; mail sending
+                  [javax.mail/mail "1.4.7"]
+
                   [funcool/cats "2.1.0"]]
   :repl-options {
                   :nrepl-middleware [lighttable.nrepl.handler/lighttable-ops]})
