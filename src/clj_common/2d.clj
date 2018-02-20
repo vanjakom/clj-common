@@ -1,4 +1,14 @@
-(ns clj-common.2d)
+(ns clj-common.2d
+  (:import javax.imageio.ImageIO))
+
+; structures
+; point
+;    :x
+;    :y
+
+; java 2d coordinate system
+; upper left corner is (0,0)
+
 
 (def color-white {:red (float 1.0) :green (float 1.0) :blue (float 1.0)})
 (def color-black {:red (float 0.0) :green (float 0.0) :blue (float 0.0)})
@@ -13,15 +23,20 @@
     height
     java.awt.image.BufferedImage/TYPE_INT_RGB))
 
-(defn width [image-context]
+(defn context-width [image-context]
   (.getWidth image-context))
 
-(defn height [image-context]
+(defn context-height [image-context]
   (.getHeight image-context))
 
 (defn color->awt-color [color]
   (new java.awt.Color ^float (:red color) ^float (:green color) ^float (:blue color)))
 
+
+(defn offset-point [point x-offset y-offset]
+  {
+    :x (+ (:x point) x-offset)
+    :y (+ (:y point) y-offset)})
 
 (defn fill-poly [image-context points color]
   (let [x-coords (int-array (map :x points))
@@ -43,9 +58,7 @@
 
 
 (defn set-points [image-context points color]
-  (let [x-coords (int-array (map :x points))
-        y-coords (int-array (map :y points))
-        color-rgb (.getRGB (color->awt-color color))]
+  (let [color-rgb (.getRGB (color->awt-color color))]
     (doseq [{x :x y :y} points]
       (.setRGB image-context x y color-rgb))))
 
@@ -54,13 +67,19 @@
     image-context
     (list
        {:x 0 :y 0}
-       {:x (width image-context) :y 0}
-       {:x (width image-context) :y (height image-context)}
-       {:x 0 :y (height image-context)})
+       {:x (context-width image-context) :y 0}
+       {:x (context-width image-context) :y (context-height image-context)}
+       {:x 0 :y (context-height image-context)})
     color))
 
 (defn write-to-stream [image-context output-stream]
-  (javax.imageio.ImageIO/write
+  (ImageIO/write
     image-context
     "BMP"
+    output-stream))
+
+(defn write-png-to-stream [image-context output-stream]
+  (ImageIO/write
+    image-context
+    "PNG"
     output-stream))

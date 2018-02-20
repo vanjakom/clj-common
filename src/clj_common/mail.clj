@@ -21,6 +21,17 @@
 ; :password - password
 ; :from - from
 
+; attachment
+; :content - InputStream
+; :content-type
+; :filename
+
+
+; links
+; https://stackoverflow.com/questions/16117365/sending-mail-attachment-using-java
+; https://stackoverflow.com/questions/18333594/is-starttls-enabled-true-is-safe-for-mail-sending-from-java-code
+; https://github.com/drewr/postal
+
 (defn send-email
   ([configuration to subject body]
    (send-email configuration to subject body nil))
@@ -49,11 +60,12 @@
                          (:password configuration)))))
          message (new MimeMessage session)]
      (let [mime-multipart (new MimeMultipart)]
-       (.addBodyPart
-         mime-multipart
-         (doto
-           (new MimeBodyPart)
-           (.setText body)))
+       (if-let [body body]
+         (.addBodyPart
+           mime-multipart
+           (doto
+             (new MimeBodyPart)
+             (.setText body))))
        (doseq [attachment attachments]
          (.addBodyPart
            mime-multipart
@@ -66,7 +78,7 @@
                    ByteArrayDataSource
                    (:content attachment)
                    (:content-type attachment))))
-             (.setFileName "test"))))
+             (.setFileName (:filename attachment)))))
        (doto message
          (.setFrom (new InternetAddress (:from configuration)))
          (.addRecipients Message$RecipientType/TO to)

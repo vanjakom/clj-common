@@ -1,4 +1,7 @@
-(ns clj-common.io)
+(ns clj-common.io
+  (:import
+    java.io.ByteArrayOutputStream
+    java.io.ByteArrayInputStream))
 
 (defn byte2input-stream [byte-array]
   (new java.io.ByteArrayInputStream byte-array))
@@ -236,3 +239,10 @@
       (fn []
         (new java.io.ByteArrayInputStream bytes)))))
 
+
+(defn buffer-output-stream []
+  (new ByteArrayOutputStream))
+
+(defn buffer-output-stream->input-stream [buffer-output-stream]
+  (let [byte-array (.toByteArray buffer-output-stream)]
+    (new ByteArrayInputStream byte-array)))
