@@ -62,6 +62,30 @@
     (doseq [{x :x y :y} points]
       (.setRGB image-context x y color-rgb))))
 
+(defn extract-subimage [{
+                          image-context :image-context
+                          x :x
+                          y :y
+                          width :width
+                          height :height :as configuration}]
+  (.getSubimage image-context x y width height))
+
+; copied from clojure-repl old clj-common project
+(defn create-thumbnail
+  "Creates thumbnail that will fit into max-dimension x max-dimension square"
+  [max-dimension ^java.awt.image.BufferedImage image]
+  (let [width (.getWidth image)
+        height (.getHeight image)
+        factor (min (/ max-dimension width) (/ max-dimension height))
+        new-width (int (* width factor))
+        new-height (int (* height factor))
+        empty-image (create-image-context new-width new-height)
+        graphics (.getGraphics empty-image)]
+    (.drawImage graphics image 0 0 new-width new-height nil)
+    (.dispose graphics)
+    empty-image))
+
+
 (defn write-background [image-context color]
   (fill-poly
     image-context

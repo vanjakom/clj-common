@@ -11,3 +11,6 @@
 
 (defn md5-string [string]
   (md5-bytes (.getBytes string)))
+
+(def string->md5-string md5-string)
+(def string->md5 md5-string)

@@ -55,3 +55,10 @@
       (catch Throwable t
         (logging/report-throwable (select-keys request [:uri]) t)
         {:status 500}))))
+
+
+(defn expose-variable [handler]
+  (fn [request]
+
+
+    ))

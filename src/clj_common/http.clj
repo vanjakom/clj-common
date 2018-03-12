@@ -55,3 +55,17 @@
         (:body response)
         nil))
     (catch Exception e (logging/report-throwable {:url url} e))))
+
+
+(defn parse-query-string [uri]
+  (let [query-string (second (.split uri "\\?"))
+        params (into
+                 {}
+                 (map
+                   (fn [param]
+                     (let [pair (.split param "=")]
+                       [(keyword (first pair)) (second pair)]))
+                   (.split query-string "&")))]
+    params))
+
+

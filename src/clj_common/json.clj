@@ -44,3 +44,29 @@
   (let [writer (io/output-stream2writer output-stream)]
     (json/write object writer)
     (.flush writer)))
+
+
+(defn write-to-line-stream [object output-stream]
+  (let [writer (io/output-stream2writer output-stream)]
+    (json/write object writer)
+    (.write writer 10) ; new line char
+    (.flush writer)))
+
+(defn serialize [object]
+  (let [byte-output-stream (io/create-byte-output-stream)]
+    (write-to-stream object byte-output-stream)
+    (io/byte-output-stream->bytes byte-output-stream)))
+(def json->bytes serialize)
+
+(defn deserialize [bytes]
+  (let [input-stream (io/bytes->input-stream bytes)]
+    (read-keyworded input-stream)))
+(def bytes->json deserialize)
+
+
+(comment
+  (deserialize
+    (serialize {:a 10})))
+
+
+

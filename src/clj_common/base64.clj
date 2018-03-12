@@ -2,8 +2,10 @@
 
 (require '[clj-common.io :as io])
 
-(defn base64->byte-array [^String base64-as-string]
+(defn base64->bytes [^String base64-as-string]
   (org.apache.commons.codec.binary.Base64/decodeBase64 (.getBytes base64-as-string)))
+(def base64->byte-array base64->bytes)
+
 
 (defn base64->string [^String base64-as-string]
   (new String (base64->byte-array base64-as-string)))
@@ -13,8 +15,10 @@
     String
     (org.apache.commons.codec.binary.Base64/encodeBase64 (.getBytes string))))
 
-(defn byte-array->base64-string [byte-aray]
+
+(defn bytes->base64 [byte-aray]
   (org.apache.commons.codec.binary.Base64/encodeBase64String byte-aray))
+(def byte-array->base64-string bytes->base64)
 
 (defn string->input-stream [base64-string]
   (new

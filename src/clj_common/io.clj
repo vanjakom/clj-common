@@ -3,8 +3,14 @@
     java.io.ByteArrayOutputStream
     java.io.ByteArrayInputStream))
 
-(defn byte2input-stream [byte-array]
+(defn bytes->input-stream [byte-array]
   (new java.io.ByteArrayInputStream byte-array))
+(def byte2input-stream bytes->input-stream)
+
+(defn byte-output-stream->bytes [byte-output-stream]
+  (.toByteArray byte-output-stream))
+(defn create-byte-output-stream []
+  (new ByteArrayOutputStream))
 
 (defn string->input-stream [str-value]
   (new java.io.ByteArrayInputStream (.getBytes str-value)))
@@ -40,10 +46,11 @@
     java.io.BufferedWriter
     (new java.io.OutputStreamWriter output-stream)))
 
-(defn input-stream->byte-array [input-stream]
+(defn input-stream->bytes [input-stream]
   (org.apache.commons.io.IOUtils/toByteArray input-stream))
 
-(def input-stream2bytes input-stream->byte-array)
+(def input-stream->byte-array input-stream->bytes)
+(def input-stream2bytes input-stream->bytes)
 
 (defn input-stream->string [input-stream]
   (org.apache.commons.io.IOUtils/toString input-stream))
