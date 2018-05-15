@@ -56,6 +56,8 @@
     (.drawPolygon graphics x-coords y-coords (count x-coords))
     (.dispose graphics)))
 
+(defn set-point [image-context color x y]
+  (.setRGB image-context x y (.getRGB (color->awt-color color))))
 
 (defn set-points [image-context points color]
   (let [color-rgb (.getRGB (color->awt-color color))]

@@ -8,6 +8,22 @@
 (defn timestamp-second []
   (int (/ (System/currentTimeMillis) 1000)))
 
+(defn timestamp-of-day-second
+  "Returns timestamp of begging of current day, useful for reports"
+  []
+  (let [current-timestamp (timestamp-second)]
+    (*
+      (int (/
+             current-timestamp
+             (* 24 60 60)))
+      (* 24 60 60))))
+
+
+(comment
+  (timestamp-second)
+  (timestamp-of-day-second))
+
+
 (defn timestamp->date [timestamp]
   	(str (.toString
 		(if (< timestamp 1000000000000)

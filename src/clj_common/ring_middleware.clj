@@ -1,12 +1,15 @@
-(ns clj-common.ring-middleware)
-
-(require 'ring.util.request)
-(require 'ring.middleware.params)
-(require 'ring.middleware.file)
-(require '[clj-common.path :as path])
-
-(require '[clj-common.json :as json])
-(require '[clj-common.logging :as logging])
+(ns clj-common.ring-middleware
+  (:require
+    ring.util.request
+    ring.middleware.params
+    ring.middleware.keyword-params
+    ring.middleware.json
+    ring.middleware.file
+    [clj-common.path :as path]
+    [clj-common.2d :as draw]
+    [clj-common.io :as io]
+    [clj-common.json :as json]
+    [clj-common.logging :as logging]))
 
 (defn wrap-only-query-params [handler]
   (fn [request]
@@ -57,9 +60,63 @@
         {:status 500}))))
 
 
-(defn expose-variable [handler]
-  (fn [request]
-    ; todo
+(defn expose-variable []
+  (ring.middleware.json/wrap-json-response
+    (ring.middleware.params/wrap-params
+      (ring.middleware.keyword-params/wrap-keyword-params
+        (fn [request]
+          (let [namespace (or (:namespace (:params request)) "user")
+                name (:name (:params request))]
+            (if-let [var (ns-resolve (symbol namespace) (symbol name))]
+              {
+                :status 200
+                :body (deref var)}
+              {
+                :status 404})))))))
+
+(defn expose-image []
+  (ring.middleware.params/wrap-params
+    (ring.middleware.keyword-params/wrap-keyword-params
+      (fn [request]
+        (let [namespace (or (:namespace (:params request)) "user")
+              name (:name (:params request))]
+          (if-let [var (ns-resolve (symbol namespace) (symbol name))]
+            {
+              :status 200
+              :headers {
+                         "Content-Type" "image/png"}
+              :body (let [buffer-output-stream (io/buffer-output-stream)]
+                      (draw/write-png-to-stream
+                        (deref var)
+                        buffer-output-stream)
+                      (io/buffer-output-stream->input-stream buffer-output-stream))}
+            {
+              :status 404}))))))
 
 
-    ))
+
+
+(comment
+  (require 'clj-common.http-server)
+
+  (clj-common.http-server/create-server
+    7078
+    (compojure.core/GET
+      "/image"
+      _
+      (expose-image)))
+  ; http://localhost:7078/image?name=image
+  ; in user ns do
+  (in-ns 'user)
+  (def image (clj-common.2d/create-image-context 300 300))
+  (clj-common.2d/write-background image clj-common.2d/color-green)
+  (clj-common.http-server/stop-server 7078)
+
+
+  (require 'clj-common.http-server)
+  (clj-common.http-server/create-server
+    7078
+    (compojure.core/GET
+      "/variable"
+      _
+      (expose-variable))))

@@ -6,6 +6,13 @@ Common clojure functions
 
 [com.mungolab/clj-common "0.1.0-SNAPSHOT"]
 
+## Pointers
+
+### multimethods
+json
+
+
+
 ## License
 
 Copyright © 2016 mungolab.com

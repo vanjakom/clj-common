@@ -58,6 +58,15 @@
     {}
     coll))
 
+
+(comment
+  (count-by-each
+    :tags
+    [
+      {:tags #{:a :b}}
+      {:tags #{:c :d}}
+      {:tags #{:a}}]))
+
 ;(defmacro multiple-reduce
 ;  "example:
 ;  (multiple-reduce [

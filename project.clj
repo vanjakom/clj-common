@@ -9,6 +9,9 @@
                                       :sign-releases false}]]
   :dependencies [
                   [org.clojure/clojure "1.8.0"]
+
+                  [org.clojure/core.async "0.4.474"]
+
                   [lein-light-nrepl "0.3.2"]
 
                   [clj-time "0.11.0"]

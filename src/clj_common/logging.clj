@@ -1,9 +1,9 @@
-(ns clj-common.logging)
-
-(require '[clj-common.localfs :as fs])
-(require '[clj-common.path :as path])
-(require '[clj-common.jvm :as jvm])
-(require '[clj-common.edn :as edn])
+(ns clj-common.logging
+  (:require [clj-common.localfs :as fs]
+            [clj-common.path :as path]
+            [clj-common.jvm :as jvm]
+            [clj-common.edn :as edn]
+            [clj-common.time :as time]))
 
 (def logger (agent nil))
 
@@ -15,10 +15,15 @@
     (fn [possible-output-stream]
       (let [output-stream (if (some? possible-output-stream)
                             possible-output-stream
-                            (fs/output-stream
-                              (path/child
-                                (jvm/jvm-path)
-                                "logging")))]
+                            (let [fresh-output-stream
+                                  (fs/output-stream-by-appending
+                                    (path/child (jvm/jvm-path) "logging"))]
+                              (edn/write-object
+                                fresh-output-stream
+                                {
+                                  :status "logging started"
+                                  :timestamp (time/timestamp-second)})
+                              fresh-output-stream))]
         (if (coll? object)
           (edn/write-object output-stream object)
           (edn/write-object output-stream {:message object}))

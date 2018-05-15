@@ -13,16 +13,24 @@
 ;  10
 ;  60)
 
+(def ^:dynamic *report-duration-per-each* false)
+
 (defn test-route
   ([request-create-fn response-valid-fn number-of-threads sum-requests sleep-between-requests metrics]
    (let [per-thread-request (int (/ sum-requests number-of-threads))
          thread-pool (java.util.concurrent.Executors/newFixedThreadPool number-of-threads)
+         report-duration-per-each *report-duration-per-each*
          main-fn (fn [thread-name]
-                   (binding [clj-common.metrics/*metrics* metrics]
+                   (binding [clj-common.metrics/*metrics* metrics
+                             *report-duration-per-each* report-duration-per-each]
                      (.setName (Thread/currentThread) thread-name)
                      (doseq [iteration (range 0 per-thread-request)]
-                       (let [request-fn (request-create-fn)
+                       (let [[id request-fn] (request-create-fn)
                              [duration response] (time/timed-response-fn (request-fn))]
+                         (if *report-duration-per-each*
+                           (logging/report {
+                                             :duration duration
+                                             :request id }))
                          (if (response-valid-fn response)
                            (do
                              (metrics/inc-counter "response.vaild")

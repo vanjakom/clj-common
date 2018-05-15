@@ -136,4 +136,3 @@
       (distance
         {:longitude (:min-longitude aggregate) :latitude (:min-latitude aggregate)}
         {:longitude (:max-longitude aggregate) :latitude (:max-latitude aggregate)})]))
-

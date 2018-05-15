@@ -33,6 +33,9 @@
 (defn get-pid []
   (.getName (java.lang.management.ManagementFactory/getRuntimeMXBean)))
 
+(defn get-hostname []
+  (.getHostName (java.net.InetAddress/getLocalHost)))
+
 (defn jvm-path []
   (into
     []
@@ -50,6 +53,11 @@
 
 (defn get-classpath []
   (System/getProperty "java.class.path"))
+
+(defn home-path []
+  (path/string->path
+    (System/getProperty "user.home")))
+
 
 ; todo potential problem with loader used, using context class loader
 (defn resource-as-stream [path-in-jar]
