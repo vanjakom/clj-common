@@ -1,8 +1,7 @@
-(ns clj-common.jvm)
-
-(require '[clojure.java.io :as io])
-
-(require '[clj-common.path :as path])
+(ns clj-common.jvm
+  (:require
+    [clojure.java.io :as io]
+    [clj-common.path :as path]))
 
 (defn get-memory []
   (let [runtime (Runtime/getRuntime)
@@ -17,6 +16,12 @@
 (defn get-threads []
   (let [stack-traces (Thread/getAllStackTraces)]
     (into [] (.keySet stack-traces))))
+
+(defn thread []
+  (Thread/currentThread))
+
+(defn thread-name []
+  (.getName (Thread/currentThread)))
 
 (defn print-memory []
   (let [{
@@ -51,8 +56,17 @@
 ;  (path/path4string (System/getProperty "user.dir")))
 
 
-(defn get-classpath []
+(defn classpath []
   (System/getProperty "java.class.path"))
+
+(def get-classpath classpath)
+
+(defn classpath-as-path-seq []
+  (map
+    path/string->path
+    (.split
+      (classpath)
+      ":")))
 
 (defn home-path []
   (path/string->path

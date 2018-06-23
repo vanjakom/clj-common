@@ -48,7 +48,7 @@
 (defn distance->human-string [distance]
   (cond
     (> distance 1000) (str (long (/ distance 1000)) "km")
-    :else (str distance "m")))
+    :else (str (int distance) "m")))
 
 (def distance-two-locations distance)
 

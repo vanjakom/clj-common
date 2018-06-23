@@ -12,7 +12,6 @@
 
                   [org.clojure/core.async "0.4.474"]
 
-                  [lein-light-nrepl "0.3.2"]
 
                   [clj-time "0.11.0"]
                   [clj-http "2.2.0"]
@@ -33,8 +32,10 @@
                   [ring/ring-json "0.4.0" :exclusions [com.fasterxml.jackson.core/jackson-core]]
 
                   ; mail sending
+                  [com.draines/postal "2.0.2"]
                   [javax.mail/mail "1.4.7"]
 
-                  [funcool/cats "2.1.0"]]
-  :repl-options {
-                  :nrepl-middleware [lighttable.nrepl.handler/lighttable-ops]})
+                  ; visualization
+                  [incanter "1.5.7"]
+
+                  [funcool/cats "2.1.0"]])

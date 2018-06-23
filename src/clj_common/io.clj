@@ -1,7 +1,11 @@
 (ns clj-common.io
   (:import
     java.io.ByteArrayOutputStream
-    java.io.ByteArrayInputStream))
+    java.io.ByteArrayInputStream
+    java.nio.ByteBuffer ))
+
+; note
+; clj-common.as should replace most of transformers in clj-common.io
 
 (defn bytes->input-stream [byte-array]
   (new java.io.ByteArrayInputStream byte-array))
@@ -14,6 +18,20 @@
 
 (defn string->input-stream [str-value]
   (new java.io.ByteArrayInputStream (.getBytes str-value)))
+
+; https://stackoverflow.com/questions/1252468/java-converting-string-to-and-from-bytebuffer-and-associated-problems
+(defn string->byte-buffer [string]
+  (ByteBuffer/wrap (.getBytes string)))
+
+; https://stackoverflow.com/questions/1252468/java-converting-string-to-and-from-bytebuffer-and-associated-problems
+(defn byte-buffer->string [byte-buffer]
+  (new
+    String
+    (if (.hasArray byte-buffer)
+      (.array byte-buffer)
+      (let [bytes (byte-array (.remaining byte-buffer))]
+        (.get byte-buffer bytes)
+        bytes))))
 
 (def string2input-stream string->input-stream)
 
@@ -247,8 +265,9 @@
         (new java.io.ByteArrayInputStream bytes)))))
 
 
-(defn buffer-output-stream []
+(defn create-buffer-output-stream []
   (new ByteArrayOutputStream))
+(def buffer-output-stream create-buffer-output-stream)
 
 (defn buffer-output-stream->input-stream [buffer-output-stream]
   (let [byte-array (.toByteArray buffer-output-stream)]

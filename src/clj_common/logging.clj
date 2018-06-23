@@ -31,14 +31,17 @@
         output-stream)))
   nil)
 
-(defn report-throwable [info t]
-  (report
-    (assoc
-      info
-      :status :exception
-      :class (.getName (.getClass t))
-      :message (.getMessage t)
-      :stack (map
-               (fn [element]
-                 (.toString element))
-               (.getStackTrace t)))))
+(defn report-throwable
+  ([t]
+   (report-throwable {} t))
+  ([info t]
+   (report
+     (assoc
+       info
+       :status :exception
+       :class (.getName (.getClass t))
+       :message (.getMessage t)
+       :stack (map
+                (fn [element]
+                  (.toString element))
+                (.getStackTrace t))))))

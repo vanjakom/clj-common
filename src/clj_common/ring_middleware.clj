@@ -5,6 +5,8 @@
     ring.middleware.keyword-params
     ring.middleware.json
     ring.middleware.file
+    [incanter.charts :as incanter-charts]
+    [incanter.core :as incanter-core]
     [clj-common.path :as path]
     [clj-common.2d :as draw]
     [clj-common.io :as io]
@@ -93,8 +95,49 @@
             {
               :status 404}))))))
 
+(defn expose-plot []
+  (ring.middleware.params/wrap-params
+    (ring.middleware.keyword-params/wrap-keyword-params
+      (fn [request]
+        (println request)
+        (let [namespace (or (:namespace (:params request)) "user")
+              x-axis-var (:x-axis (:params request))
+              y-axis-var (:y-axis (:params request))]
+          (if (and (some? namespace) (some? x-axis-var) (some? y-axis-var))
+            (if-let [x-axis (ns-resolve (symbol namespace) (symbol x-axis-var))]
+              (if-let [y-axis (ns-resolve (symbol namespace) (symbol y-axis-var))]
+                {
+
+                  :body (let [buffer-output-stream (io/buffer-output-stream)]
+                          (incanter-core/save
+                            (incanter-charts/xy-plot (deref x-axis) (deref y-axis))
+                            buffer-output-stream)
+                          (io/buffer-output-stream->input-stream buffer-output-stream))}
+                {
+                  :status 404})
+              {
+                :status 404})
+            {
+              :status 404}))))))
+
+(comment
+  (require 'clj-common.http-server)
+
+  (clj-common.http-server/create-server 7077 (fn [request] {:body "Hello" :status 200}))
+  (clj-common.http-server/create-server 7077 (expose-plot))
+
+  (clj-common.http-server/create-server 7077 (clj-common.ring-middleware/expose-plot))
+
+  (require 'clj-common.localfs)
+  (require 'clj-common.io)
+
+  (with-open [output-stream (clj-common.localfs/output-stream ["tmp" "chart1"])]
+    (clj-common.io/copy-input-to-output-stream
+      (:body ((expose-plot) {:params {:namespace "user" :x-axis "x" :y-axis "y"}}))
+      output-stream))
 
 
+  ((expose-plot) {:params {:namespace "user" :x-axis "x" :y-axis "y"}}))
 
 (comment
   (require 'clj-common.http-server)
