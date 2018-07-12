@@ -1,6 +1,7 @@
-(ns clj-common.clojure)
-
-(require '[clj-common.exception :as exception])
+(ns clj-common.clojure
+  (:require
+    [clj-common.logging :as logging]
+    [clj-common.exception :as exception]))
 
 ; from early days :)
 (defn not-nil? [value]
@@ -183,7 +184,7 @@
 
 (defn todo-warn [& args]
   (let [info (clojure.string/join args)]
-    (println (if (empty? info) "todo" info))))
+    (logging/report {:type :todo :message (if (empty? info) "todo" info)})))
 
 
 

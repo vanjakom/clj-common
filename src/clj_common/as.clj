@@ -35,6 +35,33 @@
 (defmethod integer :unknown [value]
   (throw (new RuntimeException (str "No transformer to Integer from " (class value)))))
 
+
+; long
+
+(defn long-dispatch [value]
+  (cond
+    (nil? value) :nil
+    (instance? Number value) :number
+    (instance? String value) :string
+    :else :unknown))
+
+(defmulti long (var long-dispatch))
+
+(defmethod long :number [^Number value]
+  (.longValue value))
+
+(defmethod long :string [value]
+  (Long/parseLong value))
+
+(def ^:dynamic *default-long* (long 0))
+(defmethod long :nil [_]
+  *default-long*)
+
+(defmethod long :unknown [value]
+  (throw (new RuntimeException (str "No transformer to Long from " (class value)))))
+
+
+
 ; double
 
 (defn double-dispatch [value]

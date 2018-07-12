@@ -10,12 +10,13 @@
 ; upper left corner is (0,0)
 
 
-(def color-white {:red (float 1.0) :green (float 1.0) :blue (float 1.0)})
-(def color-black {:red (float 0.0) :green (float 0.0) :blue (float 0.0)})
-(def color-green {:red (float 0.0) :green (float 1.0) :blue (float 0.0)})
-(def color-red {:red (float 1.0) :green (float 0.0) :blue (float 0.0)})
+(def color-white {:red (float 1.0) :green (float 1.0) :blue (float 1.0) :alpha (float 1.0)})
+(def color-black {:red (float 0.0) :green (float 0.0) :blue (float 0.0) :alpha (float 1.0)})
+(def color-green {:red (float 0.0) :green (float 1.0) :blue (float 0.0) :alpha (float 1.0)})
+(def color-red {:red (float 1.0) :green (float 0.0) :blue (float 0.0) :alpha (float 1.0)})
+(def color-transparent {:red (float 1.0) :green (float 1.0) :blue (float 1.0) :alpha (float 0.0)})
 
-(defn random-color [] {:red (rand) :green (rand) :blue (rand)})
+(defn random-color [] {:red (rand) :green (rand) :blue (rand) :alpha (float 1.0)})
 
 (defn create-image-context [width height]
   (new
@@ -34,7 +35,7 @@
   (.getHeight image-context))
 
 (defn color->awt-color [color]
-  (new java.awt.Color ^float (:red color) ^float (:green color) ^float (:blue color)))
+  (new java.awt.Color ^float (:red color) ^float (:green color) ^float (:blue color) (:alpha color)))
 
 
 (defn offset-point [point x-offset y-offset]
@@ -59,6 +60,20 @@
     (.setColor graphics color)
     (.drawPolygon graphics x-coords y-coords (count x-coords))
     (.dispose graphics)))
+
+(defn draw-image [image-context [center-x center-y] sprite-image-context]
+  ; what to do with background color
+  ; render with offset, check if it fits ... skip if not
+  (let [graphics (.getGraphics image-context)]
+    (.drawImage
+      graphics
+      sprite-image-context
+      (- center-x (/ (context-width sprite-image-context) 2))
+      (- center-y (/ (context-height sprite-image-context) 2))
+      (context-width sprite-image-context)
+      (context-height sprite-image-context)
+      (color->awt-color color-transparent)
+      nil)))
 
 (defn set-point [image-context color x y]
   (.setRGB image-context x y (.getRGB (color->awt-color color))))

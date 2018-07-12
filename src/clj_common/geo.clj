@@ -1,6 +1,7 @@
-(ns clj-common.geo)
-
-(use 'clj-common.clojure)
+(ns clj-common.geo
+  (:use
+    clj-common.clojure
+    clj-common.test))
 
 (def model
   {
@@ -14,7 +15,13 @@
       :min-longitude :double
       :min-latitude :double
       :max-longitude :double
-      :max-latitude :double}})
+      :max-latitude :double}
+    :bounding-box
+    [
+      :min-longitude
+      :max-longitude
+      :min-latitude
+      :max-latitude]})
 
 (defn create-location [longitude latitude]
   {:longitude longitude :latitude latitude})
@@ -79,8 +86,6 @@
             (* (Math/sin latitude1) (Math/cos latitude2) (Math/cos delta-longitude)))]
     (radians-to-degrees (Math/atan2 x y))))
 
-
-
 (defn location-in-rect
   "location :location
    rect :rect"
@@ -136,3 +141,36 @@
       (distance
         {:longitude (:min-longitude aggregate) :latitude (:min-latitude aggregate)}
         {:longitude (:max-longitude aggregate) :latitude (:max-latitude aggregate)})]))
+
+(defn bounding-box [location-seq]
+  "Returns [min-longitude max-longitude min-latitude max-latitude]"
+  (reduce
+    (fn [[min-longitude max-longitude min-latitude max-latitude]
+         {longitude :longitude latitude :latitude}]
+      [(min longitude (or min-longitude longitude))
+       (max longitude (or max-longitude longitude))
+       (min latitude (or min-latitude latitude))
+       (max latitude (or max-latitude latitude))])
+    [nil nil nil nil]
+    location-seq))
+
+(test
+  "bounding-box test"
+  (= (bounding-box
+       (list
+         {:longitude 20 :latitude 40}
+         {:longitude 21 :latitude 39}))))
+
+(defn bounding-box->longitude-latitude-radius
+  "Converts bounding box to longitude, latitude, radius triple"
+  [[min-longitude max-longitude min-latitude max-latitude]]
+  [
+      (+
+        min-longitude
+        (/ (- max-longitude min-longitude) 2))
+      (+
+        min-latitude
+        (/ (- max-latitude min-latitude) 2))
+      (distance
+        {:longitude min-longitude :latitude min-latitude}
+        {:longitude max-longitude :latitude max-latitude})])

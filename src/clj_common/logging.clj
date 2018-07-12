@@ -5,6 +5,8 @@
             [clj-common.edn :as edn]
             [clj-common.time :as time]))
 
+; note cannot depend to clj-commmon.clojure
+
 (def logger (agent nil))
 
 (defn report
