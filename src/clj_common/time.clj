@@ -24,14 +24,26 @@
   (timestamp-of-day-second))
 
 
+(defn timestamp->plain-date [timestamp]
+  (if (< timestamp 1000000000000)
+    (clj-time.coerce/from-long (* timestamp 1000))
+    (clj-time.coerce/from-long timestamp)))
+
 (defn timestamp->date [timestamp]
   	(str (.toString
 		(if (< timestamp 1000000000000)
 			(clj-time.coerce/from-long (* timestamp 1000))
 			(clj-time.coerce/from-long timestamp))) " GMT"))
-
 (def timestamp-date  timestamp->date)
 
+(defn timestamp->date-in-timezone [timezone timestamp]
+  (let [dateTimeFormatter (new java.text.SimpleDateFormat "yyyy-MM-dd HH:mm:ss")]
+    (.setTimeZone
+     dateTimeFormatter
+     (java.util.TimeZone/getTimeZone "Europe/Belgrade"))
+    (.format
+     dateTimeFormatter
+     (if (< timestamp 1000000000000) (* timestamp 1000) timestamp))))
 
 (defn millis->seconds [timestamp]
   (long (/ timestamp 1000)))

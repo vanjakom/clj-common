@@ -90,4 +90,12 @@
 (defn environment-variable [name]
   (System/getenv name))
 
+(defn fork-process
+  "Forks process and collects std out and std err"
+  [statement]
+  (let [process (.exec
+                 (Runtime/getRuntime)
+                 statement)]
+    [(.getInputStream process) (.getErrorStream process)]))
+
 

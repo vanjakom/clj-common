@@ -85,6 +85,16 @@
   (let [url (new java.net.URL url-string)]
     (.openStream url)))
 
+(defn input-stream->line-seq
+  [input-stream]
+  ; maybe to check if input stream is already reader 
+  (line-seq (input-stream->buffered-reader input-stream)))
+
+(defn input-stream->std-out
+  [input-stream]
+  (doseq [line (input-stream->line-seq input-stream)]
+    (println line)))
+
 (defn write [output-stream bytes]
   (.write output-stream bytes))
 
