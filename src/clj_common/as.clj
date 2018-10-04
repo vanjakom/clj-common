@@ -13,107 +13,107 @@
 
 ; integer
 
-(defn integer-dispatch [value]
+(defn as-integer-dispatch [value]
   (cond
     (nil? value) :nil
     (instance? Number value) :number
     (instance? String value) :string
     :else :unknown))
 
-(defmulti integer (var integer-dispatch))
+(defmulti as-integer as-integer-dispatch)
 
-(defmethod integer :number [^Number value]
+(defmethod as-integer :number [^Number value]
   (.intValue value))
 
-(defmethod integer :string [value]
+(defmethod as-integer :string [value]
   (Integer/parseInt value))
 
 (def ^:dynamic *default-integer* (int 0))
-(defmethod integer :nil [_]
+(defmethod as-integer :nil [_]
   *default-integer*)
 
-(defmethod integer :unknown [value]
+(defmethod as-integer :unknown [value]
   (throw (new RuntimeException (str "No transformer to Integer from " (class value)))))
 
 
 ; long
 
-(defn long-dispatch [value]
+(defn as-long-dispatch [value]
   (cond
     (nil? value) :nil
     (instance? Number value) :number
     (instance? String value) :string
     :else :unknown))
 
-(defmulti long (var long-dispatch))
+(defmulti as-long as-long-dispatch)
 
-(defmethod long :number [^Number value]
+(defmethod as-long :number [^Number value]
   (.longValue value))
 
-(defmethod long :string [value]
+(defmethod as-long :string [value]
   (Long/parseLong value))
 
 (def ^:dynamic *default-long* (long 0))
-(defmethod long :nil [_]
+(defmethod as-long :nil [_]
   *default-long*)
 
-(defmethod long :unknown [value]
+(defmethod as-long :unknown [value]
   (throw (new RuntimeException (str "No transformer to Long from " (class value)))))
 
 
 
 ; double
 
-(defn double-dispatch [value]
+(defn as-double-dispatch [value]
   (cond
     (nil? value) :nil
     (instance? Number value) :number
     (instance? String value) :string
     :else :unknown))
 
-(defmulti double (var double-dispatch))
+(defmulti as-double as-double-dispatch)
 
-(defmethod double :number [^Number value]
+(defmethod as-double :number [^Number value]
   (.doubleValue value))
 
-(defmethod double :string [value]
+(defmethod as-double :string [value]
   (Double/parseDouble value))
 
 (def ^:dynamic *default-double* (clojure.core/double 0))
-(defmethod double :nil [_]
+(defmethod as-double :nil [_]
   *default-double*)
 
-(defmethod double :unknown [value]
+(defmethod as-double :unknown [value]
   (throw (new RuntimeException (str "No transformer to Double from " (class value)))))
 
 
 ; keyword
 
-(defn keyword-dispatch [value]
+(defn as-keyword-dispatch [value]
   (cond
     (nil? value) :nil
     (keyword? value) :keyword
     (instance? String value) :string
     :else :unknown))
 
-(defmulti keyword (var keyword-dispatch))
+(defmulti as-keyword as-keyword-dispatch)
 
 (def ^:dynamic *default-keyword* nil)
-(defmethod keyword :nil [_]
+(defmethod as-keyword :nil [_]
   *default-keyword*)
 
-(defmethod keyword :keyword [value]
+(defmethod as-keyword :keyword [value]
   value)
 
-(defmethod keyword :string [value]
+(defmethod as-keyword :string [value]
   (clojure.core/keyword value))
 
 (comment
-  (integer "10")
-  (integer nil)
-  (integer 15.1)
-  (integer {:a 10})
+  (as-integer "10")
+  (as-integer nil)
+  (as-integer 15.1)
+  (as-integer {:a 10})
 
-  (class (double (integer "10"))))
+  (class (double (as-integer "10"))))
 
 

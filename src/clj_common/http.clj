@@ -43,6 +43,25 @@
 
 (def url->response get-raw-as-stream)
 
+
+(defn post-raw-as-stream [url body-stream]
+  (try
+    (let [response (clj-http/post
+                     url
+                     {
+                       :body body-stream
+                       :as :stream
+                       :throw-exceptions false})]
+      (update-in
+        response
+        [:headers]
+        (fn [raw-headers]
+          (into
+            {}
+            (map (fn [[k v]] [(keyword k) v]) raw-headers)))))
+    (catch Exception e (logging/report-throwable {:url url} e))))
+
+
 (defn post-as-stream [url body-stream]
   (try
     (let [response (clj-http/post
@@ -55,6 +74,8 @@
         (:body response)
         nil))
     (catch Exception e (logging/report-throwable {:url url} e))))
+
+
 
 
 (defn parse-query-string [uri]

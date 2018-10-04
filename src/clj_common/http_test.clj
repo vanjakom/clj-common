@@ -25,22 +25,24 @@
                              *report-duration-per-each* report-duration-per-each]
                      (.setName (Thread/currentThread) thread-name)
                      (doseq [iteration (range 0 per-thread-request)]
-                       (let [[id request-fn] (request-create-fn)
-                             [duration response] (time/timed-response-fn (request-fn))]
-                         (if *report-duration-per-each*
-                           (logging/report {
-                                             :duration duration
-                                             :request id }))
-                         (if (response-valid-fn response)
-                           (do
-                             (metrics/inc-counter "response.vaild")
-                             (metrics/report-timer "response.duration" duration)
-                             (metrics/report-timer (str "per-thread." thread-name ".duration") duration))
-                           (do
-                             (logging/report response)
-                             (metrics/inc-counter "response.invaild")))
-                         (if (> (or sleep-between-requests 0) 0)
-                           (Thread/sleep sleep-between-requests))))))]
+                       (let [[id request-fn] (request-create-fn)]
+                         (try
+                           (let [[duration response] (time/timed-response-fn (request-fn))]
+                             (if *report-duration-per-each*
+                               (logging/report {
+                                                 :duration duration
+                                                 :request id }))
+                             (if (response-valid-fn response)
+                               (do
+                                 (metrics/inc-counter "response.vaild")
+                                 (metrics/report-timer "response.duration" duration)
+                                 (metrics/report-timer (str "per-thread." thread-name ".duration") duration))
+                               (do
+                                 (logging/report response)
+                                 (metrics/inc-counter "response.invaild")))
+                             (if (> (or sleep-between-requests 0) 0)
+                               (Thread/sleep sleep-between-requests)))
+                           (catch Exception e (logging/report-throwable {:request id} e)))))))]
      (doseq [thread-num (range 0 number-of-threads)]
        (let [thread-fn (partial main-fn (str "worker-" thread-num))]
          (.execute thread-pool thread-fn)))
