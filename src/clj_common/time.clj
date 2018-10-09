@@ -36,8 +36,9 @@
 			(clj-time.coerce/from-long timestamp))) " GMT"))
 (def timestamp-date  timestamp->date)
 
+(def ^:dynamic *date-format* "yyyy-MM-dd HH:mm:ss")
 (defn timestamp->date-in-timezone [timezone timestamp]
-  (let [dateTimeFormatter (new java.text.SimpleDateFormat "yyyy-MM-dd HH:mm:ss")]
+  (let [dateTimeFormatter (new java.text.SimpleDateFormat *date-format*)]
     (.setTimeZone
      dateTimeFormatter
      (java.util.TimeZone/getTimeZone "Europe/Belgrade"))
