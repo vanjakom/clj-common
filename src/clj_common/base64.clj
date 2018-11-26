@@ -1,4 +1,5 @@
-(ns clj-common.base64)
+(ns clj-common.base64
+  "Set of fns for work with Base64 ecoding. Defaulting to base64 to be a string")
 
 (require '[clj-common.io :as io])
 
@@ -10,11 +11,12 @@
 (defn base64->string [^String base64-as-string]
   (new String (base64->byte-array base64-as-string)))
 
-(defn string->base64-string [^String string]
+(defn string->base64 [^String string]
   (new
     String
     (org.apache.commons.codec.binary.Base64/encodeBase64 (.getBytes string))))
 
+(def string->base64-string string->base64)
 
 (defn bytes->base64 [byte-aray]
   (org.apache.commons.codec.binary.Base64/encodeBase64String byte-aray))

@@ -75,6 +75,11 @@
       (color->awt-color color-transparent)
       nil)))
 
+(defn draw-text [image-context color ^String text x y]
+  (let [graphics (.getGraphics image-context)]
+    (.setColor graphics (color->awt-color color))
+    (.drawString graphics text (int x) (int y))))
+
 (defn set-point [image-context color x y]
   (.setRGB image-context x y (.getRGB (color->awt-color color))))
 

@@ -35,8 +35,9 @@
       (int (/ max-memory 1024 1024)) "MB max, "
       (int (/ total-memory 1024 1024)) "MB total")))
 
-(defn get-pid []
+(defn pid []
   (.getName (java.lang.management.ManagementFactory/getRuntimeMXBean)))
+(def get-pid pid)
 
 (defn get-hostname []
   (.getHostName (java.net.InetAddress/getLocalHost)))

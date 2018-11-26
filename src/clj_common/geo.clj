@@ -86,6 +86,7 @@
             (* (Math/sin latitude1) (Math/cos latitude2) (Math/cos delta-longitude)))]
     (radians-to-degrees (Math/atan2 x y))))
 
+; depricated use location-in-bouding-box
 (defn location-in-rect
   "location :location
    rect :rect"
@@ -159,7 +160,8 @@
   (= (bounding-box
        (list
          {:longitude 20 :latitude 40}
-         {:longitude 21 :latitude 39}))))
+         {:longitude 21 :latitude 39}))
+     [20 21 39 40]))
 
 (defn bounding-box->longitude-latitude-radius
   "Converts bounding box to longitude, latitude, radius triple"
@@ -174,3 +176,38 @@
       (distance
         {:longitude min-longitude :latitude min-latitude}
         {:longitude max-longitude :latitude max-latitude})])
+
+; https://gis.stackexchange.com/questions/5821/calculating-latitude-longitude-x-miles-from-point
+(defn longitude-latitude-radius->bounding-box
+  "Converts longitude and latitude of location with given radius to bounding box.
+  Takes given latitude for longitude distance calculations, not precise on large distances.
+  Radius in meters."
+  [longitude latitude radius]
+  (let [latitude-distance (/ (double radius) 111111)
+        longitude-distance (/ latitude-distance (Math/cos (Math/toRadians latitude)))]
+    [
+     (- longitude longitude-distance)
+     (+ longitude longitude-distance)
+     (- latitude latitude-distance)
+     (+ latitude latitude-distance)]))
+
+(defn location-in-bounding-box
+  "Checks if location belongs to bounding box
+  Bounding box is defined with [min-longitude max-longitude min-latitude max-latitude]"
+  [bounding-box location]
+  (try
+    (let [longitude (:longitude location)
+          latitude (:latitude location)]
+      (and
+       (> longitude (get bounding-box 0))
+       (< longitude (get bounding-box 1))
+       (> latitude (get bounding-box 2))
+       (< latitude (get bounding-box 3))))
+    (catch Exception ex (throw
+                         (ex-info
+                          "Exception in location-in-bounding-box"
+                          {:bounding-box bounding-box :location location}
+                          ex)))))
+
+
+        

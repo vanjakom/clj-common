@@ -1,5 +1,9 @@
 (ns clj-common.debug)
 
+(defn print-and-return [value]
+  (println value)
+  value)
+
 ; taken from Joy of Clojure book
 
 (defn readr [prompt exit-code]
