@@ -13,15 +13,21 @@
       :max-memory max-memory
       :total-memory total-memory}))
 
-(defn get-threads []
+(defn threads []
   (let [stack-traces (Thread/getAllStackTraces)]
     (into [] (.keySet stack-traces))))
+(def get-threads threads)
 
 (defn thread []
   (Thread/currentThread))
 
 (defn thread-name []
   (.getName (Thread/currentThread)))
+
+(defn interrupt-thread [thread-name]
+  (.interrupt
+   (first
+    (filter #(= (.getName %) thread-name) (clj-common.jvm/threads)))))
 
 (defn print-memory []
   (let [{

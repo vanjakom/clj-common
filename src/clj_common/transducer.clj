@@ -3,6 +3,8 @@
    [clj-common.io :as io]
    [clj-common.context :as context]))
 
+;;; pipeline is probably v2 of transducer ns
+
 (defn list-reducing-fn
   "Creates list from qiven sequence"
   ([] (list))
@@ -29,11 +31,17 @@
     ([state entry] (assoc state (key-fn entry) entry))
     ([state] state)))
 
-(defn distribution-reducing-fn
-  "Creates distribution map per given entry in sequence"
-  ([] {})
-  ([state entry] (assoc state entry (inc (get state entry 0))))
-  ([state] state))
+(defn create-distribution-reducing-fn
+  "Creates distribution map per given entry in sequence, event-transform-fn
+  will be used to extract key from entry, entry-transform-fn(entry)"
+  [entry-transform-fn]
+  (fn
+    ([] {})
+    ([state entry] (let [key (entry-transform-fn entry)]
+                     (assoc state key (inc (get state key 0)))))
+    ([state] state)))
+
+(def distribution-reducing-fn (create-distribution-reducing-fn identity))
 
 (defn create-line-output-stream-reducing-fn
   "Writes given lines to output stream created by calling output-stream-create-fn.

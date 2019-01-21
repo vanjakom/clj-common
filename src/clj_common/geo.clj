@@ -143,6 +143,16 @@
         {:longitude (:min-longitude aggregate) :latitude (:min-latitude aggregate)}
         {:longitude (:max-longitude aggregate) :latitude (:max-latitude aggregate)})]))
 
+(defn bounding-box-reducing-fn
+  ([] [nil nil nil nil])
+  ([[min-longitude max-longitude min-latitude max-latitude] location]
+   [
+    (min (or min-longitude (:longitude location)) (:longitude location))
+    (max (or max-longitude (:longitude location)) (:longitude location))
+    (min (or min-latitude (:latitude location)) (:latitude location))
+    (max (or max-latitude (:latitude location)) (:latitude location))])
+  ([state] state))
+
 (defn bounding-box [location-seq]
   "Returns [min-longitude max-longitude min-latitude max-latitude]"
   (reduce

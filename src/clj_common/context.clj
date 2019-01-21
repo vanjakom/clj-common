@@ -1,64 +1,114 @@
 (ns clj-common.context)
 
 ;;; context v2, not same as one in maply-backend-tools
+;;; dynamic binding variant is good for single thread processing, when using
+;;; core.async context will be provided
+
+;;; different context impementations should implement only scope* fns, extending
+;;; base context map ...
 
 (def context
   {
-   :counter-fn [:fn :string nil]
+   ;; prefix which will be used during reporting
+   :scope :string
+
+   :counter-fn [:fn :string :nil]
+   :scope-counter-fn [:fn :scope :string :nil]
+
    :state-fn [:fn :object :nil]
+   :scope-state-fn [:fn :scope :object :nil]
+
    :trace-fn [:fn :string :nil]
+   :scope-trace-fn [:fn :scope :string :nil]
+   
    ;; called when processing fails with exception
-   :error-fn [:fn :throwable :object :nil]})
+   :error-fn [:fn :throwable :object :nil]
+   :scope-error-fn [:fn :scope :throwable :object :nil]})
+
+(defn wrap-scope
+  ([context scope]
+   (assoc
+    context
+    :counter-fn (partial (:scope-counter-fn context) (or scope "global"))
+    :state-fn (partial (:scope-state-fn context) (or scope "global"))
+    :trace-fn (partial (:scope-trace-fn context) (or scope "global"))
+    :error-fn (partial (:scope-error-fn context) (or scope "global"))))
+  ([context] (wrap-scope context nil)))
 
 (defn create-stdout-context
   "Creates plain std out context, to be used with sample processing"
   []
-  {
-   :counter-fn (fn [counter]
-                 (println "counter increase " counter))
-   :trace-fn (fn [trace]
-               (println trace))
-   :state-fn (fn [state]
-               (println "state set " state))})
+  (wrap-scope
+   {
+    :scope-counter-fn
+    (fn [scope counter]
+      (println "counter increase:" scope "." counter))
+    :scope-trace-fn
+    (fn [scope trace]
+      (println scope trace))
+    :scope-state-fn
+    (fn [scope state]
+      (println "state set" scope state))
+    :scope-error-fn
+    (fn [scope throwable data]
+      (println scope throwable data)
+      (.printStrackTrace throwable))}))
 
 (defn create-state-context
   "Creates state based context, adds :context-dump-fn which returns current state of
   context and :context-print-fn which outputs context state. Exception will be re thrown."
   []
-  (let [context (atom {})]
-    {
-     :counter-fn (fn [counter]
-                   (swap!
-                    context
-                    update-in [:counters counter]
-                    (fn [value] (inc (or value 0)))))
-     :state-fn (fn [state]
-                 (swap!
-                  context
-                  update-in [:state]
-                  (fn [_] state)))
-     :trace-fn (fn [trace]
-                 ;; todo store trace in ring buffer
-                 (println trace)
-                 )
-     :context-dump-fn (fn [] @context) 
-     :context-print-fn (fn []
-                         (let [state @context]
-                           (println "state" (:state state))
-                           (println "counters:")
-                           (doseq [[counter value] (:counters state)]
-                             (println "\t" counter "=" value))))}))
+  (wrap-scope
+   (let [context (atom {})
+         counter-fn (fn [scope counter]
+                      (swap!
+                       context
+                       update-in [:counters scope counter]
+                       (fn [value] (inc (or value 0)))))]
+     {
+      :scope-counter-fn counter-fn
+      :scope-state-fn (fn [scope state]
+                        (swap!
+                         context
+                         update-in [:state scope]
+                         (fn [_] state)))
+      :scope-trace-fn (fn [scope trace]
+                        ;; todo store trace in ring buffer
+                        (println scope trace)
+                        )
+      :scope-error-fn (fn [scope throwable data]
+                        ;; todo report exception to channel in case tracing is needed
+                        (counter-fn scope "exception"))
+      :context-dump-fn (fn [] @context) 
+      :context-print-fn (fn []
+                          (let [state @context]
+                            (println "state:")
+                            (doseq [[scope state] (:state state)]
+                              (println "\t" scope state))
+                            (println "counters:")
+                            (doseq [[scope counters] (:counters state)]
+                              (doseq [[counter value] counters]
+                                (println "\t" scope counter "=" value)))))})))
 
 (def ^:dynamic *context* (create-stdout-context))
 
-(defn increment-counter [counter] ((:counter-fn *context*) counter))
+(defn counter
+  ([context counter] ((:counter-fn context) counter))
+  ([counter] (counter *context* counter)) )
 
-(defn trace [trace] ((:trace-fn *context*) trace))
+(def increment-counter counter)
 
-(defn set-state [state] ((:state-fn *context*) state))
+(defn trace
+  ([context trace] ((:trace-fn context) trace))
+  ([trace] (trace *context* trace)))
 
-(defn error [throwable data]
-  ((:error-fn *context*) throwable data))
+(defn set-state
+  ([context state] ((:state-fn context) state))
+  ([state] (set-state *context* state)))
+
+(defn error
+  ([context throwable data] ((:error-fn context) throwable data))
+  ([throwable data] (error *context* throwable data)))
 
 (defn create-state-context-reporting-thread
   "Creates, starts and returns thread that will on given interval in ms report context state"
@@ -75,43 +125,3 @@
                     (catch InterruptedException e ((:context-print-fn context))))))]
     (.start thread)
     thread))
-
-#_(let [counter (atom 0)]
-  (try
-   (while
-       true
-       (if (= @counter 3) (throw (new Exception "Test") ) )
-       (swap! counter inc)
-       (Thread/sleep 1000))
-   (catch Exception e (println "finish"))))
-
-#_(let [context (create-state-context)]
-  (transduce
-   identity
-   (create-context-reducing-fn context list-reducing-fn)
-   [1 2 3])
-  ((:context-print-fn context)))
-
-#_((create-context-reducing-fn (create-stdout-context) list-reducing-fn) [] 2)
-#_(let [context (create-state-context)]
-  ((:counter-fn context) "test")
-  ((:counter-fn context) "test")
-  ((:context-print-fn context)))
-
-#_(update-in {} [:counters :a] (fn [value] (inc (or value 0))))
-#_(update-in {:counters {:a 5}} [:counters :a] (fn [value] (inc (or value 0))))
-
-#_@(atom {} )
-
-#_(Transduce
- identity
- (fn
-   ([] (println "init") [])
-   ([state object] (println "iteration") (conj state object))
-   ([state] (println "close")))
- [1 2 3])
-
-#_(transduce
- identity
- list-concat-reducing-fn
- [[1 2 3] [4 5 6] [7]])

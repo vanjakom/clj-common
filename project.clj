@@ -8,9 +8,9 @@
                                       :url "https://clojars.org/repo"
                                       :sign-releases false}]]
   :dependencies [
-                  [org.clojure/clojure "1.8.0"]
+                  [org.clojure/clojure "1.10.0"]
 
-                  [org.clojure/core.async "0.4.474"]
+                  [org.clojure/core.async "0.4.490"]
 
 
                   [clj-time "0.11.0"]
