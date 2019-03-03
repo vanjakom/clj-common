@@ -105,4 +105,4 @@
                  statement)]
     [(.getInputStream process) (.getErrorStream process)]))
 
-
+(defn random-uuid [] (.toString (java.util.UUID/randomUUID)))

@@ -3,37 +3,172 @@
    [clojure.core.async :as async]
    [clj-common.context :as context]
    [clj-common.edn :as edn]
-   [clj-common.localfs :as fs]))
+   [clj-common.env :as env]
+   [clj-common.localfs :as fs]
+   [clj-common.io :as io]
+   [clj-common.jvm :as jvm]
+   [clj-common.path :as path]))
+
+;;; concept
+;;; chan - connection point
+;;; go - processing power, has at least in and out chan as params
+;;; required features:
+;;; - ability to stop processing
+;;; - metrics, number of entries read, emitted
+;;;   ( it would be good to be able to say for each filter, map, reduce stats 
+;;; notes:
+;;; normal flow, read go emits data, transducer go does processing, write go saves to fs
+;;; read go will close out channel once all data is read
+;;; write go will, once in channel is closed, close stream to fs
+;;; stopping, each go should close in channel in case it's unable to write to out channel
+;;; pipeline halt could happen in both directions, downstream normal and upstream stopped
+
+;;; todo
+;;; create some construct which would catch exception inside go and report go with state
+;;; set to "exception" that would help debugging, maybe even close pipeline once it happens
+
+;;; todo
+;;; controller - way to sequence pipelines together
+;;; either to use in namespaces to execute one pipeline at the time or to sync multiple
+;;  pipelines, maybe to use completion state of nodes to know when execution is finished 
+
+;;; todo
+;;; 20190209, unified external resource allocation ( input / output streams ), issue with
+;;; connecting to channels, side effect gos,
+;;; example: trek-mate.integration.osm/create-dot-split-tile-dynamic-out-fn
 
 ;;; todo
 ;;; stopping chain is not working, close of underneath chan would not stop reader
 ;;; since reader buffers elements ...
 ;;; meaning take is not functioning as expected
 ;;; 20190127, update, close-and-exaust should be used within all stopping go-s, note tested
-
-;;; todo
-;;; channel closing, should it be bottom -> down, or down -> up, or both?, pipeline stopping
-;;; think more about this
+;;; 20190130, each go should close and drain in channel in case it was unable to write to
+;;; out channel, implemented in chunk-to-map-go
 
 ;;; todo
 ;;; return of gos, currently in some it's :sucesss, should it be channel to stop go or
 ;;; some control thing ...
 
-(defn close-and-exhaust
-  "To be used within pipeline to close and exhaust channel. Exhaust is important
-  for stopping of pipeline, read -> take example, once take obtained enough elements
-  It will close channel read is emitting to and read one more element read created"
-  [chan]
-  (async/close! chan)
-  (async/go
-    (loop [element (async/<! chan)]
-      (when element
-        (recur (async/<! chan))))))
+(defn closed? [channel]
+  (clojure.core.async.impl.protocols/closed? channel))
 
+(defmacro close-and-exhaust
+  "To be used within pipeline to close and exhaust channel. Exhaust is important
+  for stopping of pipeline, read -> take example, once take obtained enough elements.
+  It will close channel read is emitting to and read one more element read created.
+  Assumes it's being called inside go loop."
+  [chan]
+  `(do
+     (async/close! ~chan)
+     (loop [element# (async/<! ~chan)]
+       (when element#
+         (recur (async/<! ~chan))))))
+
+(defmacro out-or-close-and-exhaust-in
+  "Tries to write to out channel. If out is closed closes in channel and reads all data
+  from it. Assumes it's being called inside go loop."
+  [out data in-to-close]
+  `(if (async/>! ~out ~data)
+     true
+     (do
+       (close-and-exhaust ~in-to-close)
+       false)))
+
+
+;;; helper channels provider, to enable dynamic allocation and binding of channels
+;;; take a look to trek-mate.examples.belgrade for usage cases
+(defn create-channels-provider
+  "Creates provider of channels, to be called with keyword representing channel, if
+  channel doesn't exist in pool one will be created, could be used at end to verify
+  pipeline is finished.
+  Returns function with two arities, arity 0 returns current state of channels, arity
+  1 ensures channel with given keyword is created."
+  []
+  (let [channels (atom {})]
+    (fn
+      ([] @channels)
+      ([channel-keyword]
+       (if-let [channel (get @channels channel-keyword)]
+         channel
+         (get
+          (swap!
+           channels
+           (fn [channels]
+             (if-let [channel (get channels channel-keyword)]
+               channels
+               (assoc channels channel-keyword (async/chan)))))
+          channel-keyword))))))
+
+;;; resource countroller concept
+;;; to be used to control all stateful resources ( local fs, remote fs, cloudkit )
+;;; content of entry in theory could be channel which when closed would stop reading / writing
+;;; resource controller is defined as function with 3 arities
+;;; (resource-control) -> returns currently open resouces
+;;; (resource-control path go-fn channel) -> reports resource usage
+;;; (resource-control path go-fn) -> removes resource usage
+(defn create-resource-controller
+  "Creates resource controller to be used inside go fns working with resources"
+  [context]
+  (let [data (atom {})]
+    (fn
+      ([] (deref data))
+      ([path go-fn channel]
+       ;;; todo notify if multiple go fns use same resource
+       (swap! data assoc path [go-fn channel]))
+      ([path go-fn]
+       (swap! data dissoc path)))))
+
+(defn create-dummy-resource-controller
+  "Creates dummy resource controller to be used when resource tracking is not required"
+  []
+  (fn
+    ([])
+    ([_ _ _])
+    ([_ _])))
+
+(defn create-trace-resource-controller
+  [context]
+  (fn
+    ([])
+    ([path go _] (context/trace context (str "open" path "by" go)))
+    ([path go] (context/trace context (str "close" path "by" go)))))
+
+(defn read-line-go
+  "Reads contents of file, line by line to given channel. Channel is closed when file is read.
+  In case ch is closed by downstream reading is stopped. Reports reading to resource controller"
+  [context resource-control path ch]
+  (async/go
+    (with-open [input-stream (fs/input-stream path)]
+      (context/set-state context "init")
+      (resource-control path read-line-go ch)
+      (loop [line-seq (io/input-stream->line-seq input-stream)]
+        (when-let [line (first line-seq)] 
+          (context/set-state context "step")
+          (when (async/>! ch line)
+            (context/counter context "read")
+            (recur (rest line-seq))))))
+    (resource-control path read-line-go)
+    (async/close! ch)
+    (context/set-state context "completion")))
+
+(declare transducer-stream-go)
+
+;;; depricated use read-line-go with transducer transforming to edn
 (defn read-edn-go
   "Reads contents of file to given channel. Channel is closed when file is read."
-  [context path ch]
-  (async/go     
+  ;;; depricated use version with resource controller
+  ([context path ch] (read-edn-go context (create-dummy-resource-controller) path ch))
+  ([context resource-control path ch]
+   (let [in (async/chan)]
+     (read-line-go context resource-control path in)
+     (transducer-stream-go
+      (context/wrap-scope context "edn")
+      in
+      edn/read-object
+      ch)))
+  
+  ;;; old implementation
+  #_(async/go     
     (with-open [input-stream (fs/input-stream path)]
       #_(context/counter context "init")
       (context/set-state context "init")
@@ -49,22 +184,66 @@
       (context/set-state context "completion")
       :success)))
 
-(defn write-edn-go
-  "Writes contents of given channel. File is closed when channel is closed."
-  [context path ch]
+(defn write-line-go
+  [context resource-control path ch]
   (async/go
     (with-open [output-stream (fs/output-stream path)]
-      #_(context/counter context "init")
       (context/set-state context "init")
-      (loop [object (async/<! ch)]
-        (when object
-          (edn/write-object output-stream object)
+      (resource-control path write-line-go ch)
+      (loop [line (async/<! ch)]
+        (context/set-state context "step")
+        (when line
+          (io/write-line output-stream line)
           (context/counter context "write")
+          (recur (async/<! ch)))))
+    (resource-control path write-line-go)
+    (context/set-state context "completion")))
+
+(defn write-line-atomic-go
+  "Writes data to temporary location, once channel is closed data is moved to final location"
+  [context resource-control path ch]
+  (let [temp-path (path/child env/*temp-path* (jvm/random-uuid))]
+    (async/go
+      (with-open [output-stream (fs/output-stream temp-path)]
+        (context/set-state context "init")
+        (resource-control temp-path write-line-atomic-go ch)
+        (loop [line (async/<! ch)]
           (context/set-state context "step")
-          (recur (async/<! ch))))
-      #_(context/counter context "completion")
-      (context/set-state context "completion")
-      :success)))
+          (when line
+            (io/write-line output-stream line)
+            (context/counter context "write")
+            (recur (async/<! ch)))))
+      (resource-control temp-path write-line-atomic-go)
+      (fs/move temp-path path)
+      (context/set-state context "completion"))))
+
+;;; depricated use write-line with transducer transforming to string
+(defn write-edn-go
+  "Writes contents of given channel. File is closed when channel is closed."
+  ([context path ch] (write-line-go context (create-dummy-resource-controller) path ch))
+  ([context resource-control path ch]
+   (let [out (async/chan)]
+     (transducer-stream-go
+      (context/wrap-scope context "edn")
+      ch
+      edn/write-object
+      out)
+     (write-line-go context resource-control path out))
+
+   ;;; old implementation
+   #_(async/go
+     (with-open [output-stream (fs/output-stream path)]
+       #_(context/counter context "init")
+       (context/set-state context "init")
+       (loop [object (async/<! ch)]
+         (when object
+           (edn/write-object output-stream object)
+           (context/counter context "write")
+           (context/set-state context "step")
+           (recur (async/<! ch))))
+       #_(context/counter context "completion")
+       (context/set-state context "completion")
+       :success))))
 
 (defn emit-var-seq-go
   "Emits sequence stored in given variable to channel. Channel is closed when sequence
@@ -188,6 +367,34 @@
     (async/close! out)
     (context/set-state context "completion")))
 
+(defn chunk-to-map-go
+  "Reads given number of elements from in ch, adds them to map by given key-fn. Once chunk
+  is read map is sent downstream. Not waiting for downstream to process chunk before creating
+  next one"
+  [context in key-fn value-fn chunk-size out]
+  (async/go
+    (context/set-state context "init")
+    (loop [chunk {}
+           count 0
+           element (async/<! in)]
+      (if element
+        (do
+          (context/set-state context "step")
+          (context/counter context "in")
+          (let [new-chunk (assoc chunk (key-fn element) (value-fn element))
+                new-count (inc count)]
+            (if (= new-count chunk-size)
+              (do
+                (when (out-or-close-and-exhaust-in out new-chunk in)
+                  (context/counter context "out")
+                  (recur {} 0 (async/<! in))))
+              (recur new-chunk new-count (async/<! in)))))
+        (when (> count 0)
+          (when (out-or-close-and-exhaust-in out chunk in)
+            (context/counter context "out")))))
+    (async/close! out)
+    (context/set-state context "completion")))
+
 (defn constantly-go
   "Reads value from in channel once and emitts same value to out until out is not closed"
   [context in out]
@@ -268,8 +475,8 @@
               (context/counter context "out")
               (recur new-state (async/<! in))))
           (do
-            (async/close! out)
             (async/>! out (reducing-fn state))
+            (async/close! out)
             #_(context/counter context "completion")
             (context/set-state context "completion")))))
     :success))
@@ -292,6 +499,37 @@
           (do
             (reducing-fn state)
             (context/set-state context "completion")))))))
+
+(defn for-each-go
+  [context in fn-to-apply]
+  (async/go
+    (context/set-state context "init")
+    (loop [element (async/<! in)]
+      (when element
+        (context/set-state context "step")
+        (context/counter context "in")
+        (fn-to-apply element)
+        (recur (async/<! in))))
+    (context/set-state context "completion")))
+
+(defn ignore-stopping-go
+  "Intended for debugging. Enables connection of pipelines which are done on chunk of data
+  to be connected with channel which streams data to debug upon.
+  Note: current implementation looses one element on each change of downstream pipeline"
+  [context in out]
+  (async/go
+    (context/set-state "init")
+    (loop [element (async/<! in)]
+      (when element
+        (context/set-state context "step")
+        (context/counter context "in")
+        ;;; todo
+        ;;; element should be returned to when unable to write it downstream
+        (when (async/>! out element)
+          (context/counter context "out")
+          (recur (async/<! in)))))
+    (async/close! out)
+    (context/set-state context "completion")))
 
 (defn trace-go
   "Intented for debugging. Reports to context all messages that go over channel,
@@ -317,4 +555,17 @@
              (async/close! out))
            (context/set-state context "trace-completion"))))
      :success)))
+
+(defn wait-go
+  "Waits for value on given channel for millis before returning nil. Timeout is added to ensure
+  calling thread would not be locked indefinetly."
+  [context chan timeout-millis]
+  (context/set-state context "init")
+  (context/set-state context "step")
+  (let [return (async/alt!!
+                 (async/timeout timeout-millis) nil
+                 chan ([v chan] v))]
+    (context/set-state context "completion")
+    return))
+
 

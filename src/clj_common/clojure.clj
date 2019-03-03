@@ -10,7 +10,7 @@
 (defn not-empty? [value]
   (not (empty? value)))
 
-; http://stackoverflow.com/questions/11676120/why-dont-when-let-and-if-let-support-multiple-bindings-by-default
+;;; http://stackoverflow.com/questions/11676120/why-dont-when-let-and-if-let-support-multiple-bindings-by-default
 (defmacro if-let*
   ([bindings then]
    `(if-let* ~bindings ~then nil))
@@ -20,6 +20,13 @@
         (if-let* ~(drop 2 bindings) ~then ~else)
         ~(if-not (second bindings) else))
      then)))
+ 
+(defmacro when-let*
+  [bindings then]
+  (if (seq bindings)
+    `(when-let [~(first bindings) ~(second bindings)]
+       (when-let* ~(drop 2 bindings) ~then))
+    then))
 
 (defn flatten-one-level [coll]
   (apply
@@ -208,3 +215,11 @@
   the call chain."
   [n & body]
   `(try-times* ~n (fn [] ~@body)))
+
+
+;;; guided by
+;;; https://crossclj.info/ns/cryogen-core/0.1.61/cryogen-core.util.html#_conj-some
+(defn conj-some
+  "Removes nil from args"
+  [coll & xs]
+  (apply conj coll (remove nil? xs)))

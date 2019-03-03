@@ -11,6 +11,24 @@
   [path]
   (.mkdirs (new java.io.File (path/path->string path))))
 
+(defn move
+  "Performs move of file"
+  [src-path dest-path]
+  (when-not (.renameTo
+    (new java.io.File (path/path->string src-path))
+    (new java.io.File (path/path->string dest-path)))
+    (throw (ex-info
+            "Unable to move file"
+            {
+             :source src-path
+             :destination dest-path}))))
+
+(defn delete
+  "Removes file or directory"
+  [path]
+  (org.apache.commons.io.FileUtils/forceDelete
+   (new java.io.File (path/path->string path))))
+
 (defn input-stream
   "Creates input stream for given path"
   [path]
@@ -19,6 +37,7 @@
 (defn output-stream
   "Creates output stream for given path"
   [path]
+  (mkdirs (path/parent path))
   (new java.io.FileOutputStream ^String (path/path->string path)))
 
 (defn output-stream-by-appending

@@ -83,11 +83,11 @@
       :context-print-fn (fn []
                           (let [state @context]
                             (println "state:")
-                            (doseq [[scope state] (:state state)]
+                            (doseq [[scope state] (sort-by first (:state state))]
                               (println "\t" scope state))
                             (println "counters:")
-                            (doseq [[scope counters] (:counters state)]
-                              (doseq [[counter value] counters]
+                            (doseq [[scope counters] (sort-by first (:counters state))]
+                              (doseq [[counter value] (sort-by first counters)]
                                 (println "\t" scope counter "=" value)))))})))
 
 (def ^:dynamic *context* (create-stdout-context))
@@ -109,6 +109,9 @@
 (defn error
   ([context throwable data] ((:error-fn context) throwable data))
   ([throwable data] (error *context* throwable data)))
+
+(defn print-state-context [context]
+  ((:context-print-fn context)))
 
 (defn create-state-context-reporting-thread
   "Creates, starts and returns thread that will on given interval in ms report context state"
