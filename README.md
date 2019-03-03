@@ -1,17 +1,11 @@
+
 # clj-common
 
 Common clojure functions
 
 ## Usage
 
-[com.mungolab/clj-common "0.1.0-SNAPSHOT"]
-
-## Pointers
-
-### multimethods
-json
-
-
+[com.mungolab/clj-common "0.2.0-SNAPSHOT"]
 
 ## License
 
