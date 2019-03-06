@@ -1,4 +1,4 @@
-(defproject com.mungolab/clj-common "0.2.0-SNAPSHOT"
+(defproject com.mungolab/clj-common "0.3.0-SNAPSHOT"
   :description "common functions"
   :url "https://github.com/vanjakom/clj-common"
   :license {:name "Eclipse Public License"
