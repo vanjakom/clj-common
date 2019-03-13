@@ -37,6 +37,11 @@
   (println value)
   value)
 
+(defn inc-or-one [value]
+  (if value
+    (inc value)
+    1))
+
 (defmacro multiple-do
   "example:
   (multiple-do

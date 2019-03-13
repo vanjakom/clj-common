@@ -23,6 +23,16 @@
 ;;; stopping, each go should close in channel in case it's unable to write to out channel
 ;;; pipeline halt could happen in both directions, downstream normal and upstream stopped
 
+;;; go routine
+;;; scope of execution, defined with context, in, out channels, state and side effects
+;;; has one of four states: init, step, exception, completion
+;;; once exception state is entered processing should halt
+
+
+;;; todo
+;;; maybe it makes sense to do all IO operations in simple, isolated gos, in that way throttling
+;;; can be easily added later 
+
 ;;; todo
 ;;; create some construct which would catch exception inside go and report go with state
 ;;; set to "exception" that would help debugging, maybe even close pipeline once it happens
@@ -348,6 +358,21 @@
           #_(context/counter context "completion")
           (context/set-state context "completion"))))
     :success))
+
+(defn ignore-close-go
+  "Copies data from in to out, ignoring propagation of close. To be used when multiple results
+  need to be reported to single controller."
+  [context in out]
+  (async/go
+    (context/set-state "init")
+    (loop [object (async/<! in)]
+      (when object
+        (context/set-state "step")
+        (context/counter "in")
+        (when (out-or-close-and-exhaust-in out object in)
+          (context/counter "out")
+          (recur (async/<! in)))))
+    (context/set-state "completion")))
 
 (defn take-go
   "Emits given number of elements from in chan to out chan. When required number of elements
