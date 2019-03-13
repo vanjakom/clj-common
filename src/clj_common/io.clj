@@ -147,59 +147,6 @@
         [(string->input-stream (str next-streamable)) rest-coll]
       :else nil)))
 
-
-; not used any more, clojure implementation of read(bytes) and read(bytes, offset, len)
-; is created and now InputStream is proxied
-; problem with old implementation was gen-class working in compile time and compiling a
-; lot of clj-common code, also with work on https://github.com/vanjakom/saturday-project
-; compiled code was a burden
-; class SequenceInputStream
-; converts sequence of String, InputStream,
-; Future<String>, Future<InputStream>, Sequence of any
-
-; links
-; https://gist.github.com/puredanger/9cc4304a43de9a67171b
-; https://clojuredocs.org/clojure.core/gen-class
-; https://clojuredocs.org/clojure.core/proxy
-; http://puredanger.github.io/tech.puredanger.com/2011/08/12/subclassing-in-clojure/
-
-;(gen-class
-;  :name "com.mungolab.common.io.SequenceInputStream"
-;  :extends java.io.InputStream
-;  :state state
-;  :constructors { [clojure.lang.Seqable] []}
-;  :exposes-methods {read readSuper}
-;  :prefix "seq-is-"
-;  :main false
-;  :init init)
-
-;(defn seq-is-init [coll]
-;  [[] (ref (streamable->input-stream coll))])
-
-;(defn seq-is-read
-;  ([this]
-;   (let [[current-stream coll] @(.state this)]
-;     (if (some? current-stream)
-;       (let [next-byte (.read current-stream)]
-;         (if
-;           (= next-byte -1)
-;           (if (empty? coll)
-;             -1
-;             (do
-;               (dosync
-;                 (ref-set
-;                   (.state this)
-;                   (streamable->input-stream coll)))
-;               (seq-is-read this)))
-;           next-byte))
-;       -1)))
-;  ([this bytes] (.readSuper this bytes))
-;  ([this bytes off len] (.readSuper this bytes off len)))
-
-;(defn seq->input-stream [coll]
-;  (new com.mungolab.common.io.SequenceInputStream coll))
-
-
 (defn input-stream-proxy [read-fn]
   (let [read-in-array-fn (fn [^bytes array off len]
                            (if (nil? array)
@@ -273,7 +220,6 @@
     (let [bytes (.toByteArray output-stream)]
       (fn []
         (new java.io.ByteArrayInputStream bytes)))))
-
 
 (defn create-buffer-output-stream []
   (new ByteArrayOutputStream))

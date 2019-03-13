@@ -1,4 +1,5 @@
-(ns clj-common.context)
+(ns clj-common.context
+  (:use clj-common.clojure))
 
 ;;; context v2, not same as one in maply-backend-tools
 ;;; dynamic binding variant is good for single thread processing, when using
@@ -42,16 +43,17 @@
    {
     :scope-counter-fn
     (fn [scope counter]
-      (println "counter increase:" scope "." counter))
+      (report "counter increase:" scope "." counter))
     :scope-trace-fn
     (fn [scope trace]
-      (println scope trace))
+      (report scope trace))
     :scope-state-fn
     (fn [scope state]
-      (println "state set" scope state))
+      (report "state set" scope state))
     :scope-error-fn
     (fn [scope throwable data]
-      (println scope throwable data)
+      (report scope throwable data)
+      ;; todo
       (.printStrackTrace throwable))}))
 
 (defn create-state-context
