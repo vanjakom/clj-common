@@ -84,6 +84,13 @@
        (close-and-exhaust ~in-to-close)
        false)))
 
+(defn channel->seq
+  "Reads whole channel into seq. Blocking. Current implementation reads whole channel into memory."
+  [ch]
+  (loop [data (list)]
+    (if-let [message (async/<!! ch)]
+      (recur (conj data message))
+      (reverse data))))
 
 ;;; helper channels provider, to enable dynamic allocation and binding of channels
 ;;; take a look to trek-mate.examples.belgrade for usage cases
@@ -160,6 +167,23 @@
     (resource-control path read-line-go)
     (async/close! ch)
     (context/set-state context "completion")))
+
+(defn read-line-from-input-stream-go
+  "Reads line by line from given input stream. Each line is sent to given channel. In channel
+  is closed reading is stopped. Closes input stream when done."
+  [context input-stream ch]
+  (async/go
+    (context/set-state context "init")
+    (let [reader (io/input-stream->buffered-reader input-stream)]
+      (loop [line (io/read-line reader)]
+        (when line
+          (context/set-state context "step")
+          (when (async/>! ch line)
+            (context/counter context "read")
+            (recur (io/read-line reader)))))
+      (.close reader)
+      (async/close! ch)
+      (context/set-state context "completion"))))
 
 (declare transducer-stream-go)
 

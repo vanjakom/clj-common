@@ -228,3 +228,13 @@
   "Removes nil from args"
   [coll & xs]
   (apply conj coll (remove nil? xs)))
+
+(def logger (agent nil))
+(defn report [& vals]
+  (send logger (fn [_] (println (clojure.string/join " " vals)) nil))
+  nil)
+(defn report-lines [& lines]
+  (send logger (fn [_] (doseq [line lines] (println line)) nil))
+  nil)
+
+
