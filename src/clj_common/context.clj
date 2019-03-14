@@ -28,12 +28,19 @@
 
 (defn wrap-scope
   ([context scope]
-   (assoc
-    context
-    :counter-fn (partial (:scope-counter-fn context) (or scope "global"))
-    :state-fn (partial (:scope-state-fn context) (or scope "global"))
-    :trace-fn (partial (:scope-trace-fn context) (or scope "global"))
-    :error-fn (partial (:scope-error-fn context) (or scope "global"))))
+   (let [scope (or
+                (when-let [parent-scope (:scope context)]
+                  (conj
+                   parent-scope
+                   (or scope "global")))
+                [(or scope "global")])]
+     (assoc
+      context
+      :scope scope
+      :counter-fn (partial (:scope-counter-fn context) scope)
+      :state-fn (partial (:scope-state-fn context) scope)
+      :trace-fn (partial (:scope-trace-fn context) scope)
+      :error-fn (partial (:scope-error-fn context) scope))))
   ([context] (wrap-scope context nil)))
 
 (defn create-stdout-context
@@ -42,17 +49,14 @@
   (wrap-scope
    {
     :scope-counter-fn
-    (fn [scope counter]
-      (report "counter increase:" scope "." counter))
+    (fn [scope counter] (report "counter increase:" (clojure.string/join "." scope) "." counter))
     :scope-trace-fn
-    (fn [scope trace]
-      (report scope trace))
+    (fn [scope trace] (report (clojure.string/join "." scope) trace))
     :scope-state-fn
-    (fn [scope state]
-      (report "state set" scope state))
+    (fn [scope state] (report "state set" (clojure.string/join "." scope) state))
     :scope-error-fn
     (fn [scope throwable data]
-      (report scope throwable data)
+      (report (clojure.string/join "." scope) throwable data)
       ;; todo
       (.printStrackTrace throwable))}))
 
@@ -65,38 +69,37 @@
          counter-fn (fn [scope counter]
                       (swap!
                        context
-                       update-in [:counters scope counter]
+                       update-in [:counters (clojure.string/join "." scope) counter]
                        (fn [value] (inc (or value 0)))))]
      {
       :scope-counter-fn counter-fn
       :scope-state-fn (fn [scope state]
                         (swap!
                          context
-                         update-in [:state scope]
-                         (fn [_] state)))
+                         update-in [:state (clojure.string/join "." scope)]
+                         (constantly state)))
       :scope-trace-fn (fn [scope trace]
                         ;; todo store trace in ring buffer
-                        (println scope trace)
-                        )
+                        (println (clojure.string/join "." scope) trace))
       :scope-error-fn (fn [scope throwable data]
                         ;; todo report exception to channel in case tracing is needed
-                        (counter-fn scope "exception"))
+                        (counter-fn (clojure.string/join "." scope) "exception"))
       :context-dump-fn (fn [] @context) 
       :context-print-fn (fn []
                           (let [state @context]
                             (println "state:")
-                            (doseq [[scope state] (sort-by first (:state state))]
-                              (println "\t" scope state))
+                            (doseq [[scope-str state] (sort-by first (:state state))]
+                              (println "\t" scope-str state))
                             (println "counters:")
-                            (doseq [[scope counters] (sort-by first (:counters state))]
+                            (doseq [[scope-str counters] (sort-by first (:counters state))]
                               (doseq [[counter value] (sort-by first counters)]
-                                (println "\t" scope counter "=" value)))))})))
+                                (println "\t" scope-str counter "=" value)))))})))
 
 (def ^:dynamic *context* (create-stdout-context))
 
 (defn counter
   ([context counter] ((:counter-fn context) counter))
-  ([counter] (counter *context* counter)) )
+  ([counter] ((:counter-fn  *context*) counter)) )
 
 (def increment-counter counter)
 

@@ -26,8 +26,9 @@
 (defn delete
   "Removes file or directory"
   [path]
-  (org.apache.commons.io.FileUtils/forceDelete
-   (new java.io.File (path/path->string path))))
+  (let [file (new java.io.File (path/path->string path))]
+    (when (.exists file)
+      (org.apache.commons.io.FileUtils/forceDelete file))))
 
 (defn input-stream
   "Creates input stream for given path"

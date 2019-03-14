@@ -30,6 +30,10 @@
 
 
 ;;; todo
+;;; exception handling, maybe each go should have try catch and on exception close both in and
+;;; out channels
+
+;;; todo
 ;;; maybe it makes sense to do all IO operations in simple, isolated gos, in that way throttling
 ;;; can be easily added later 
 
@@ -198,7 +202,7 @@
      (transducer-stream-go
       (context/wrap-scope context "edn")
       in
-      edn/read-object
+      (map edn/read)
       ch)))
   
   ;;; old implementation
@@ -260,7 +264,7 @@
      (transducer-stream-go
       (context/wrap-scope context "edn")
       ch
-      edn/write-object
+      (map edn/write-object)
       out)
      (write-line-go context resource-control path out))
 
@@ -485,16 +489,18 @@
                          ([state] nil)))]
     (async/go
       (context/set-state context "init")
+      ;; doesn't have effect
       (transducer-fn)
       (loop [object (async/<! in)]
         (context/set-state context "step")
         (when object
           (context/counter context "in")
-          (when-let [result (transducer-fn nil object)]
-            (async/>! out result)
-            (context/counter context "out"))
-          (recur (async/<! in)))
-        )
+          (if-let [result (transducer-fn nil object)]
+            (when (out-or-close-and-exhaust-in out result in)
+              (context/counter context "out")
+              (recur (async/<! in)))
+            (recur (async/<! in)))))
+      ;; doesn't have effect
       (transducer nil)
       (async/close! out)
       (context/set-state context "completion")
