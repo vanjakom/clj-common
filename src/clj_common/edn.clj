@@ -5,16 +5,16 @@
 
 (defn write-object
   "Writes given object serialized either to output stream or string depending on
-  arity called"
+  arity called. Writes object without new line at end to confirm with rest of fns"
   ([output-stream object]
    ;; truncates seq to 100 elements otherwise
    (binding [*print-length* nil]
      (.write
       output-stream
-      (.getBytes (prn-str object)))))
+      (.getBytes (clojure.string/trim-newline (prn-str object))))))
   ([object]
    (binding [*print-length* nil]
-     (prn-str object))))
+     (clojure.string/trim-newline (prn-str object)))))
 
 (defn read-object [input-stream]
   (edn/read (io/input-stream->pushback-reader input-stream)))
