@@ -190,14 +190,13 @@
   [context input-stream ch]
   (async/go
     (context/set-state context "init")
-    (let [reader (io/input-stream->buffered-reader input-stream)]
+    (with-open [reader (io/input-stream->buffered-reader input-stream)]
       (loop [line (io/read-line reader)]
         (when line
           (context/set-state context "step")
           (when (async/>! ch line)
             (context/counter context "read")
             (recur (io/read-line reader)))))
-      (.close reader)
       (async/close! ch)
       (context/set-state context "completion"))))
 
