@@ -9,6 +9,7 @@
     [incanter.core :as incanter-core]
     [clj-common.path :as path]
     [clj-common.2d :as draw]
+    [clj-common.context :as context]
     [clj-common.io :as io]
     [clj-common.json :as json]
     [clj-common.logging :as logging]))
@@ -61,6 +62,33 @@
         (logging/report-throwable (select-keys request [:uri]) t)
         {:status 500}))))
 
+(defn register-context
+  "Creates context by calling create-fn giving request as param. Stores
+  created context in :context field of request."
+  [create-fn handler]
+  (fn [request]
+    (let [context (create-fn request)]
+      (handler (assoc
+                request
+                :context
+                context)))))
+
+(defn report-state-context
+  "Once processing is complete reports state context"
+  [handler]
+  (fn [request]
+    (handler request)
+    (context/print-state-context (:context request))))
+
+(defn wrap-exception-to-context
+  "Assumes that context is set inside :context of request"
+  [handler]
+  (fn [request]
+    (try
+      (handler request)
+      (catch Throwable t
+        (context/error (:context request) t request)
+        {:status 500}))))
 
 (defn expose-variable []
   (ring.middleware.json/wrap-json-response
@@ -120,7 +148,7 @@
             {
               :status 404}))))))
 
-(comment
+#_(do
   (require 'clj-common.http-server)
 
   (clj-common.http-server/create-server 7077 (fn [request] {:body "Hello" :status 200}))
@@ -139,7 +167,7 @@
 
   ((expose-plot) {:params {:namespace "user" :x-axis "x" :y-axis "y"}}))
 
-(comment
+#_(do
   (require 'clj-common.http-server)
 
   (clj-common.http-server/create-server

@@ -229,6 +229,15 @@
   [coll & xs]
   (apply conj coll (remove nil? xs)))
 
+(defn throwable->string [e]
+  (let [sw (new java.io.StringWriter)]
+    (.printStackTrace e (new java.io.PrintWriter sw))
+    (.toString sw)))
+
+#_(try
+  (throw (new RuntimeException "test"))
+  (catch Exception e (println (throwable->string e))))
+
 (def logger (agent nil))
 (defn report [& vals]
   (send logger (fn [_] (println (clojure.string/join " " vals)) nil))

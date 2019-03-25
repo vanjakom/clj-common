@@ -80,20 +80,26 @@
                          (constantly state)))
       :scope-trace-fn (fn [scope trace]
                         ;; todo store trace in ring buffer
-                        (println (clojure.string/join "." scope) trace))
+                        (report (clojure.string/join "." scope) trace))
       :scope-error-fn (fn [scope throwable data]
-                        ;; todo report exception to channel in case tracing is needed
-                        (counter-fn (clojure.string/join "." scope) "exception"))
+                        (let [output (str
+                                      (throwable->string throwable)
+                                      (if-let [data data]
+                                        (str "Data:\n" data)
+                                        "No data"))]
+                          (report output)
+                          (counter-fn (clojure.string/join "." scope) "exception")))
       :context-dump-fn (fn [] @context) 
       :context-print-fn (fn []
                           (let [state @context]
-                            (println "state:")
+                            (report "state:")
                             (doseq [[scope-str state] (sort-by first (:state state))]
-                              (println "\t" scope-str state))
-                            (println "counters:")
-                            (doseq [[scope-str counters] (sort-by first (:counters state))]
+                              (report "\t" scope-str state))
+                            (report "counters:")
+                            (doseq [[scope-str counters]
+                                    (sort-by first (:counters state))]
                               (doseq [[counter value] (sort-by first counters)]
-                                (println "\t" scope-str counter "=" value)))))})))
+                                (report "\t" scope-str counter "=" value)))))})))
 
 (def ^:dynamic *context* (create-stdout-context))
 
