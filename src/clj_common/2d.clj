@@ -13,6 +13,7 @@
 (def color-white {:red (float 1.0) :green (float 1.0) :blue (float 1.0) :alpha (float 1.0)})
 (def color-black {:red (float 0.0) :green (float 0.0) :blue (float 0.0) :alpha (float 1.0)})
 (def color-green {:red (float 0.0) :green (float 1.0) :blue (float 0.0) :alpha (float 1.0)})
+(def color-yellow {:red (float 1.0) :green (float 1.0) :blue (float 0.0) :alpha (float 1.0)})
 (def color-red {:red (float 1.0) :green (float 0.0) :blue (float 0.0) :alpha (float 1.0)})
 (def color-transparent {:red (float 1.0) :green (float 1.0) :blue (float 1.0) :alpha (float 0.0)})
 

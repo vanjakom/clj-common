@@ -28,12 +28,15 @@
 
 (defn wrap-scope
   ([context scope]
-   (let [scope (or
-                (when-let [parent-scope (:scope context)]
-                  (conj
-                   parent-scope
-                   (or scope "global")))
-                [(or scope "global")])]
+   ;; make scope defining more pleasant for eyes, it should be either:
+   ;; ["general"] or ["scope1" "scope2" ... "scopen"]
+   (let [parent-scope (:scope context)
+         scope (conj
+                (or parent-scope ["general"])
+                (or scope "general"))
+         scope (if (and (> (count scope) 1) (= (first scope) "general"))
+                 (into [] (rest scope))
+                 scope)]
      (assoc
       context
       :scope scope

@@ -96,6 +96,18 @@
       (recur (conj data message))
       (reverse data))))
 
+(defn wait-on-channel
+  "Waits for value on given channel for millis before returning nil. Timeout is added to ensure
+  calling thread would not be locked indefinetly."
+  [context chan timeout-millis]
+  (context/set-state context "init")
+  (context/set-state context "step")
+  (let [return (async/alt!!
+                 (async/timeout timeout-millis) nil
+                 chan ([v chan] v))]
+    (context/set-state context "completion")
+    return))
+
 ;;; helper channels provider, to enable dynamic allocation and binding of channels
 ;;; take a look to trek-mate.examples.belgrade for usage cases
 (defn create-channels-provider
@@ -178,14 +190,13 @@
   [context input-stream ch]
   (async/go
     (context/set-state context "init")
-    (let [reader (io/input-stream->buffered-reader input-stream)]
+    (with-open [reader (io/input-stream->buffered-reader input-stream)]
       (loop [line (io/read-line reader)]
         (when line
           (context/set-state context "step")
           (when (async/>! ch line)
             (context/counter context "read")
             (recur (io/read-line reader)))))
-      (.close reader)
       (async/close! ch)
       (context/set-state context "completion"))))
 
@@ -258,7 +269,8 @@
 ;;; depricated use write-line with transducer transforming to string
 (defn write-edn-go
   "Writes contents of given channel. File is closed when channel is closed."
-  ([context path ch] (write-line-go context (create-dummy-resource-controller) path ch))
+  ([context path ch]
+   (write-edn-go context (create-dummy-resource-controller) path ch))
   ([context resource-control path ch]
    (let [out (async/chan)]
      (transducer-stream-go
@@ -610,17 +622,5 @@
              (async/close! out))
            (context/set-state context "trace-completion"))))
      :success)))
-
-(defn wait-go
-  "Waits for value on given channel for millis before returning nil. Timeout is added to ensure
-  calling thread would not be locked indefinetly."
-  [context chan timeout-millis]
-  (context/set-state context "init")
-  (context/set-state context "step")
-  (let [return (async/alt!!
-                 (async/timeout timeout-millis) nil
-                 chan ([v chan] v))]
-    (context/set-state context "completion")
-    return))
 
 
