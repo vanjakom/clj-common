@@ -64,8 +64,9 @@
       (.printStrackTrace throwable))}))
 
 (defn create-state-context
-  "Creates state based context, adds :context-dump-fn which returns current state of
-  context and :context-print-fn which outputs context state. Exception will be re thrown."
+  "Creates state based context, adds :context-dump-fn which returns current
+  state of context and :context-print-fn which outputs context state. Exception
+  will be re thrown."
   []
   (wrap-scope
    (let [context (atom {})
