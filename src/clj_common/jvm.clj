@@ -1,7 +1,8 @@
 (ns clj-common.jvm
   (:require
     [clojure.java.io :as io]
-    [clj-common.path :as path]))
+    [clj-common.path :as path]
+    [clj-common.localfs :as fs]))
 
 (defn get-memory []
   (let [runtime (Runtime/getRuntime)
@@ -108,6 +109,10 @@
 (defn random-uuid [] (.toString (java.util.UUID/randomUUID)))
 
 (defn classloader-from-path [& path-seq]
+  ;; check paths to ensure there is no mistake
+  (doseq [path path-seq]
+    (when-not (fs/exists? path)
+      (throw (ex-info "Path doesn't exist" {:path path}))))
   (new
    java.net.URLClassLoader
    (into-array
