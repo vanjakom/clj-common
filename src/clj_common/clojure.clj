@@ -246,4 +246,14 @@
   (send logger (fn [_] (doseq [line lines] (println line)) nil))
   nil)
 
-
+;;; https://stackoverflow.com/questions/43213573/get-in-for-lists
+(defn get-in
+  "Modified version of get-in which supports lists"
+  [structure key-seq]
+  (reduce
+   (fn [result key]
+     (if (associative? result)
+       (get result key)
+       (nth result key)))
+   structure
+   key-seq))
