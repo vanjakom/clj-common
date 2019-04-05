@@ -1,4 +1,7 @@
-(ns clj-common.debug)
+(ns clj-common.debug
+  (:require
+   clj-common.http-server
+   clj-common.ring-middleware))
 
 (defn print-and-return [value]
   (println value)
@@ -36,3 +39,12 @@
      :prompt #(print "debug=> ")
      :read readr
      :eval (partial contextual-eval (local-context))))
+
+(defn run-debug-server
+  []
+  (clj-common.http-server/create-server
+   7078
+   (compojure.core/GET
+    "/variable"
+    _
+    (clj-common.ring-middleware/expose-variable))))

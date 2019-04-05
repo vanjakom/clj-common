@@ -108,7 +108,7 @@
 
 (defn random-uuid [] (.toString (java.util.UUID/randomUUID)))
 
-(defn classloader-from-path [& path-seq]
+(defn classloader-from-path [parent & path-seq]
   ;; check paths to ensure there is no mistake
   (doseq [path path-seq]
     (when-not (fs/exists? path)
@@ -119,7 +119,8 @@
     java.net.URL
     (map
      #(new java.net.URL (str "file://"(path/path->string %)))
-     path-seq))))
+     path-seq))
+   parent))
 
 (defn map->java-hash-map [map]
   (let [java-hash-map (new java.util.HashMap)]
