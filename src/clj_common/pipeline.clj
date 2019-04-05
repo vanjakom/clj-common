@@ -607,11 +607,11 @@
    (trace-go context in identity out))
   ([context in fn out]
    (async/go
-     (context/set-state context "trace-init")
+     (context/set-state context "init")
      (loop [message (async/<! in)]
        (if message
          (do
-           (context/set-state context "trace-step")
+           (context/set-state context "step")
            (context/trace context (fn message))
            (context/counter context "trace")
            (when out
@@ -620,7 +620,27 @@
          (do
            (when out
              (async/close! out))
-           (context/set-state context "trace-completion"))))
+           (context/set-state context "completion"))))
      :success)))
 
-
+(defn funnel-go
+  "Copies data from multiple ins to out. Closes when all ins are closed."
+  [context in-seq out]
+  (async/go
+    (context/set-state context "init")
+    (loop [in-set (into #{} in-seq)]
+      (when (seq in-set)
+        (let [[val port] (async/alts! (into []  in-set))]
+          (context/set-state context "step")
+          (if (some? val)
+            (do
+              (context/counter context "in")
+              (when (async/>! out val)
+                (context/counter context "out")
+                (recur in-set)))
+            (do
+              (context/counter context "in-close")
+              (recur (disj in-set port)))))))
+    (doseq [ch in-seq] (async/close! ch))
+    (async/close! out)
+    (context/set-state context "completion")))

@@ -1,4 +1,5 @@
 (ns clj-common.ring-middleware
+  (:use clj-common.clojure)
   (:require
     ring.util.request
     ring.middleware.params
@@ -54,13 +55,14 @@
       {:status 404})))
 (def static-file-middleware static-file)
 
-(defn wrap-exception-to-logging [handler]
+(defn wrap-exception [handler]
   (fn [request]
     (try
       (handler request)
       (catch Throwable t
-        (logging/report-throwable (select-keys request [:uri]) t)
-        {:status 500}))))
+        {
+         :status 500
+         :body (throwable->string t)}))))
 
 (defn register-context
   "Creates context by calling create-fn giving request as param. Stores
@@ -91,18 +93,19 @@
         {:status 500}))))
 
 (defn expose-variable []
-  (ring.middleware.json/wrap-json-response
-    (ring.middleware.params/wrap-params
-      (ring.middleware.keyword-params/wrap-keyword-params
-        (fn [request]
-          (let [namespace (or (:namespace (:params request)) "user")
-                name (:name (:params request))]
-            (if-let [var (ns-resolve (symbol namespace) (symbol name))]
-              {
-                :status 200
-                :body (deref var)}
-              {
-                :status 404})))))))
+  (wrap-exception
+   (ring.middleware.params/wrap-params
+    (ring.middleware.keyword-params/wrap-keyword-params
+     (fn [request]
+       (let [namespace (or (:namespace (:params request)) "user")
+             name (:name (:params request))]
+         (if-let [var (ns-resolve (symbol namespace) (symbol name))]
+           {
+            :status 200
+            :headers {"ContentType" "text/json"}
+            :body (json/write-to-string (deref var))}
+           {
+            :status 404})))))))
 
 (defn expose-image []
   (ring.middleware.params/wrap-params

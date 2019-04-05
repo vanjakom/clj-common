@@ -252,8 +252,9 @@
   [structure key-seq]
   (reduce
    (fn [result key]
-     (if (associative? result)
-       (get result key)
-       (nth result key)))
+     (when (some? result)
+       (if (associative? result)
+        (get result key)
+        (nth result key))))
    structure
    key-seq))
