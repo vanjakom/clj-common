@@ -105,6 +105,9 @@
   (.write output-stream (.getBytes line))
   (.write output-stream (.getBytes "\n")))
 
+(defn write-new-line [output-stream]
+  (.write output-stream (.getBytes "\n")))
+
 (defn read-line [buffered-reader]
   (.readLine buffered-reader))
 

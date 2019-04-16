@@ -1,9 +1,11 @@
 (ns clj-common.logging
-  (:require [clj-common.localfs :as fs]
-            [clj-common.path :as path]
-            [clj-common.jvm :as jvm]
-            [clj-common.edn :as edn]
-            [clj-common.time :as time]))
+  (:require
+   [clj-common.io :as io]
+   [clj-common.localfs :as fs]
+   [clj-common.path :as path]
+   [clj-common.jvm :as jvm]
+   [clj-common.edn :as edn]
+   [clj-common.time :as time]))
 
 ; note cannot depend to clj-commmon.clojure
 
@@ -29,6 +31,7 @@
         (if (coll? object)
           (edn/write-object output-stream object)
           (edn/write-object output-stream {:message object}))
+        (io/write-new-line output-stream)
         (.flush output-stream)
         output-stream)))
   nil)
