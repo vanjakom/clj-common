@@ -57,6 +57,9 @@
         (.getAbsolutePath
           (new java.io.File "."))))))
 
+(defn jvm-arguments []
+  (.getInputArguments (java.lang.management.ManagementFactory/getRuntimeMXBean)))
+
 ; old implementation
 ;(defn get-jvm-path
 ;  "Returns path from which JVM is started"
@@ -108,8 +111,21 @@
 
 (defn random-uuid [] (.toString (java.util.UUID/randomUUID)))
 
-(defn classloader-from-path [parent & path-seq]
+(defn classloader-from-path [& path-seq]
   ;; check paths to ensure there is no mistake
+  (doseq [path path-seq]
+    (when-not (fs/exists? path)
+      (throw (ex-info "Path doesn't exist" {:path path}))))
+  (new
+   java.net.URLClassLoader
+   (into-array
+    java.net.URL
+    (map
+     #(new java.net.URL (str "file://"(path/path->string %)))
+     path-seq))))
+
+(defn classloader-with-parent-from-path [parent & path-seq]
+   ;; check paths to ensure there is no mistake
   (doseq [path path-seq]
     (when-not (fs/exists? path)
       (throw (ex-info "Path doesn't exist" {:path path}))))
