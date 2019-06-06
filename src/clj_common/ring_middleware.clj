@@ -151,6 +151,20 @@
             {
               :status 404}))))))
 
+(defn thread-dump []
+  (let [thread-dump-bean (java.lang.management.ManagementFactory/getThreadMXBean)
+        thread-dump-metrics (new com.codahale.metrics.jvm.ThreadDump thread-dump-bean)]
+    (fn [request]
+      (let [output-stream (io/buffer-output-stream)]
+        (.dump thread-dump-metrics output-stream)
+        {
+         :status 200
+         :body (io/buffer-output-stream->input-stream output-stream)}))))
+
+#_(clj-common.io/copy-input-to-output-stream
+ (:body ((clj-common.ring-middleware/thread-dump) {}))
+ System/out)
+
 #_(do
   (require 'clj-common.http-server)
 
