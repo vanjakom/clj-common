@@ -1,6 +1,6 @@
 (ns clj-common.as)
 
-; idea
+;; idea
 ; ensures type
 ; per each type two methods must exist nil and unknown
 
@@ -36,7 +36,7 @@
   (throw (new RuntimeException (str "No transformer to Integer from " (class value)))))
 
 
-; long
+;; long
 
 (defn as-long-dispatch [value]
   (cond
@@ -62,7 +62,7 @@
 
 
 
-; double
+;; double
 
 (defn as-double-dispatch [value]
   (cond
@@ -87,7 +87,7 @@
   (throw (new RuntimeException (str "No transformer to Double from " (class value)))))
 
 
-; keyword
+;; keyword
 
 (defn as-keyword-dispatch [value]
   (cond
@@ -108,12 +108,32 @@
 (defmethod as-keyword :string [value]
   (clojure.core/keyword value))
 
-(comment
+;; string
+
+(defn as-string-dispatch [value]
+  (cond
+    (nil? value) :nil
+    (keyword? value) :keyword
+    (instance? String value) :string
+    :else :unknown))
+
+(defmulti as-string as-string-dispatch)
+
+(defmethod as-string :nil [_] nil)
+
+(defmethod as-string :keyword [value]
+  (name value))
+
+(defmethod as-string :string [value]
+  value)
+
+(defmethod as-string :unknown [value]
+  (.toString value))
+
+#_(do
   (as-integer "10")
   (as-integer nil)
   (as-integer 15.1)
   (as-integer {:a 10})
 
   (class (double (as-integer "10"))))
-
-
