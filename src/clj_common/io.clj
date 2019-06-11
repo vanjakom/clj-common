@@ -111,26 +111,9 @@
 (defn read-line [buffered-reader]
   (.readLine buffered-reader))
 
-(defn seq->input-stream
-  "Creates InputStream from collection of String, Future<String, Future<InputStream>,
-  InputStream. If Future is not realized, will wait for it"
-  [coll]
-  (let [input-stream (first coll)]
-    (proxy
-      [java.io.InputStream] []
-      (read
-        (
-          []
-          (.read input-stream))
-        (
-          [^bytes bytes]
-          (proxy-super read bytes))
-        (
-          [^bytes bytes off len]
-          (proxy-super read bytes off len))))))
-
-
-(defn streamable->input-stream [coll]
+;; todo bug, parsing of json streamed through seq->input-stream served from compojure
+;; fails, seems that best would be to create java util and put this code inside
+#_(defn streamable->input-stream [coll]
   (let [next-streamable (first coll)
         rest-coll (rest coll)]
     (cond
@@ -149,8 +132,7 @@
       (instance? java.lang.Object next-streamable)
         [(string->input-stream (str next-streamable)) rest-coll]
       :else nil)))
-
-(defn input-stream-proxy [read-fn]
+#_(defn input-stream-proxy [read-fn]
   (let [read-in-array-fn (fn [^bytes array off len]
                            (if (nil? array)
                              (throw (new NullPointerException)))
@@ -177,9 +159,7 @@
       (read ([] (read-fn))
             ([^bytes bytes] (read-in-array-fn bytes 0 (alength bytes)))
             ([^bytes bytes off len] (read-in-array-fn bytes off len))))))
-
-
-(defn seq->input-stream [coll]
+#_(defn seq->input-stream [coll]
   (let [state (volatile! (streamable->input-stream coll))]
     (input-stream-proxy
       (fn read-once []
@@ -198,7 +178,7 @@
                 next-byte))
             -1))))))
 
-(comment
+#_(do
   (input-stream->string
     (seq->input-stream [
                          "test1"
