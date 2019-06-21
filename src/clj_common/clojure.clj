@@ -262,6 +262,6 @@
 (defn call-and-pass
   "Used when operation needs to be performed after s expr which produces value"
   [fn-to-call value]
-  (fn-to-call)
+  (fn-to-call value)
   value)
 
