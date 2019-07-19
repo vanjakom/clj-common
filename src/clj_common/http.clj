@@ -71,7 +71,7 @@
     (catch Exception e (logging/report-throwable {:url url} e))))
 
 (defn post-as-stream
-  ([url body-stream] (post-as-stream url body-stream {}))
+  ([url body-stream] (post-as-stream url {}  body-stream))
   ([url configuration body-stream]
    (try
     (let [response (clj-http/post
