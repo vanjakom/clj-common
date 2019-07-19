@@ -70,18 +70,22 @@
             (map (fn [[k v]] [(keyword k) v]) raw-headers)))))
     (catch Exception e (logging/report-throwable {:url url} e))))
 
-(defn post-as-stream [url body-stream]
-  (try
+(defn post-as-stream
+  ([url body-stream] (post-as-stream url body-stream {}))
+  ([url configuration body-stream]
+   (try
     (let [response (clj-http/post
                     url
                     (assoc
-                     *configuration*
+                     (merge
+                      *configuration*
+                      configuration)
                      :body
                      body-stream))]
       (if (= (:status response) 200)
         (:body response)
         nil))
-    (catch Exception e (logging/report-throwable {:url url} e))))
+    (catch Exception e (logging/report-throwable {:url url} e)))))
 
 (defn parse-query-string [uri]
   (let [query-string (second (.split uri "\\?"))
