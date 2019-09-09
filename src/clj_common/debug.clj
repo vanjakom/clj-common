@@ -40,6 +40,8 @@
      :read readr
      :eval (partial contextual-eval (local-context))))
 
+;; example url
+;; http://localhost:7078/variable?namespace=a&name=variable
 (defn run-debug-server
   []
   (clj-common.http-server/create-server

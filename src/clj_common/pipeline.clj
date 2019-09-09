@@ -507,7 +507,8 @@
         (context/set-state context "step")
         (when object
           (context/counter context "in")
-          (if-let [result (transducer-fn nil object)]
+          (if-let [result (binding [context/*context* context]
+                            (transducer-fn nil object))]
             (when (out-or-close-and-exhaust-in out result in)
               (context/counter context "out")
               (recur (async/<! in)))
