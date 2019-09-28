@@ -37,8 +37,12 @@
   (.getHeight image-context))
 
 (defn color->awt-color [color]
-  (new java.awt.Color ^float (:red color) ^float (:green color) ^float (:blue color) (:alpha color)))
-
+  (new
+   java.awt.Color
+   ^float (:red color)
+   ^float (:green color)
+   ^float (:blue color)
+   ^float (:alpha color)))
 
 (defn offset-point [point x-offset y-offset]
   {
