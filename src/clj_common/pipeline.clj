@@ -184,6 +184,27 @@
     (async/close! ch)
     (context/set-state context "completion")))
 
+(defn read-line-directory-go
+  [context resource-control directory prefix ch]
+  (async/go
+    (context/set-state context "init")
+    (doseq [path (filter
+                  #(.startsWith (path/name %) prefix)
+                  (fs/list directory))]
+      (context/set-state context "step")
+      (context/increment-counter "processing-file")
+      (with-open [input-stream (fs/input-stream path)]
+        (resource-control path read-line-go ch)
+        (loop [line-seq (io/input-stream->line-seq input-stream)]
+          (when-let [line (first line-seq)] 
+            (when (async/>! ch line)
+              (context/counter context "read")
+              (recur (rest line-seq))))))
+      (resource-control path read-line-go)
+      (context/increment-counter "processed-file"))
+    (async/close! ch)
+    (context/set-state context "completion")))
+
 (defn read-line-from-input-stream-go
   "Reads line by line from given input stream. Each line is sent to given channel. In channel
   is closed reading is stopped. Closes input stream when done."
@@ -302,6 +323,23 @@
   (async/go
     (context/set-state context "init")
     (loop [elements (deref var)]
+      (when-let [element (first elements)]
+        (let [success (async/>! ch element)]
+          (context/set-state context "step")
+          (when success
+            (context/counter context "emit")
+            (recur (rest elements))))))
+    (async/close! ch)
+    (context/set-state context "completion")
+    :success))
+
+(defn emit-seq-go
+  "Emits sequence stored in given variable to channel. Channel is closed when sequence
+  is fully iterated."
+  [context data-seq ch]
+  (async/go
+    (context/set-state context "init")
+    (loop [elements data-seq]
       (when-let [element (first elements)]
         (let [success (async/>! ch element)]
           (context/set-state context "step")
@@ -513,6 +551,36 @@
               (context/counter context "out")
               (recur (async/<! in)))
             (recur (async/<! in)))))
+      ;; doesn't have effect
+      (transducer nil)
+      (async/close! out)
+      (context/set-state context "completion")
+      :success)))
+
+(defn transducer-stream-list-go
+  "Support for sequence transducer ( mapcat, filter ... )"
+  [context in transducer out]
+  (let [transducer-fn (transducer
+                       (fn
+                         ([] nil) 
+                         ([state entry] entry)
+                         ([state] nil)))]
+    (async/go
+      (context/set-state context "init")
+      ;; doesn't have effect
+      (transducer-fn)
+      (loop [object (async/<! in)]
+        (context/set-state context "step")
+        (when object
+          (context/counter context "in")
+          (if-let [result-seq (binding [context/*context* context]
+                                (transducer-fn nil object))]
+            (loop [result-seq result-seq]
+              (when-let [result (first result-seq)]
+                (when (out-or-close-and-exhaust-in out result in)
+                  (context/counter context "out"))
+                (recur (rest result-seq)))))
+          (recur (async/<! in))))
       ;; doesn't have effect
       (transducer nil)
       (async/close! out)
