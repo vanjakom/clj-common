@@ -3,6 +3,8 @@
     [clj-common.logging :as logging]
     [clj-common.exception :as exception]))
 
+(set! *warn-on-reflection* true)
+
 ; from early days :)
 (defn not-nil? [value]
   (some? value))
