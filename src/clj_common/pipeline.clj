@@ -78,6 +78,11 @@
        (when element#
          (recur (async/<! ~chan))))))
 
+(defn stop-pipeline [channel]
+  (async/go
+    (close-and-exhaust channel)))
+
+
 (defmacro out-or-close-and-exhaust-in
   "Tries to write to out channel. If out is closed closes in channel and reads all data
   from it. Assumes it's being called inside go loop."
@@ -513,7 +518,8 @@
             (recur (async/>! out value))))
         (context/set-state context "completion")))))
 
-(defn filter-go
+;; not sure is working, use transducer-stream-go
+#_(defn filter-go
   "To be replaced with single combining transducer once I learn how to setup it."
   [context in filter-fn out]
   (async/go
@@ -523,7 +529,7 @@
       (when object
         (context/counter context "in")
         (when (filter-fn object)
-          (async/>! out)
+          (async/>! out object)
           (context/counter context "out"))
         (recur (async/<! in))))
     (async/close! out)
