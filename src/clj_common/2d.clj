@@ -89,6 +89,13 @@
 (defn set-point [image-context color x y]
   (.setRGB image-context x y (.getRGB (color->awt-color color))))
 
+(defn set-point-safe [image-context color x y]
+  (when
+      (and
+       (>= x 0) (< x (context-width image-context))
+       (>= y 0) (< y (context-height image-context)))
+    (.setRGB image-context x y (.getRGB (color->awt-color color)))))
+
 (defn set-points [image-context points color]
   (let [color-rgb (.getRGB (color->awt-color color))]
     (doseq [{x :x y :y} points]
