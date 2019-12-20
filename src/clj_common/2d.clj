@@ -13,6 +13,7 @@
 (def color-white {:red (float 1.0) :green (float 1.0) :blue (float 1.0) :alpha (float 1.0)})
 (def color-black {:red (float 0.0) :green (float 0.0) :blue (float 0.0) :alpha (float 1.0)})
 (def color-green {:red (float 0.0) :green (float 1.0) :blue (float 0.0) :alpha (float 1.0)})
+(def color-blue {:red (float 0.0) :green (float 0.0) :blue (float 1.0) :alpha (float 1.0)})
 (def color-yellow {:red (float 1.0) :green (float 1.0) :blue (float 0.0) :alpha (float 1.0)})
 (def color-red {:red (float 1.0) :green (float 0.0) :blue (float 0.0) :alpha (float 1.0)})
 (def color-transparent {:red (float 1.0) :green (float 1.0) :blue (float 1.0) :alpha (float 0.0)})
@@ -35,6 +36,16 @@
 
 (defn context-height [image-context]
   (.getHeight image-context))
+
+(defn color
+  ([red green blue]
+   (color red green blue 1.0))
+  ([red green blue alpha]
+   {
+    :red (float (/ red 255))
+    :green (float (/ green 255))
+    :blue (float (/ blue 255))
+    :alpha (float (/ alpha 255))}))
 
 (defn color->awt-color [color]
   (new
@@ -95,6 +106,20 @@
        (>= x 0) (< x (context-width image-context))
        (>= y 0) (< y (context-height image-context)))
     (.setRGB image-context x y (.getRGB (color->awt-color color)))))
+
+(defn set-point-width-safe [image-context color width x y]
+  (let [context-width (context-width image-context)
+        context-height (context-height image-context)
+        half (int (Math/floor (/ width 2)))]
+    (if (> width 1)
+      (doseq [x (range (- x half) (inc (+ x half)))]
+        (doseq [y (range (- y half) (inc (+ y half)))]
+          (when
+              (and (>= x 0) (< x context-width) (>= y 0) (< y context-height))
+            (.setRGB image-context x y (.getRGB (color->awt-color color))))))
+      (when
+          (and (>= x 0) (< x context-width) (>= y 0) (< y context-height))
+        (.setRGB image-context x y (.getRGB (color->awt-color color)))))))
 
 (defn set-points [image-context points color]
   (let [color-rgb (.getRGB (color->awt-color color))]
