@@ -25,7 +25,7 @@
     java.awt.image.BufferedImage
     width
     height
-    java.awt.image.BufferedImage/TYPE_INT_RGB))
+    java.awt.image.BufferedImage/TYPE_INT_ARGB))
 
 (defn input-stream->image-context [input-stream]
   (ImageIO/read input-stream))
