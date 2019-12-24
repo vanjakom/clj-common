@@ -6,6 +6,7 @@
    [clj-common.env :as env]
    [clj-common.localfs :as fs]
    [clj-common.io :as io]
+   [clj-common.json :as json]
    [clj-common.jvm :as jvm]
    [clj-common.path :as path]))
 
@@ -207,6 +208,25 @@
               (recur (rest line-seq))))))
       (resource-control path read-line-go)
       (context/increment-counter "processed-file"))
+    (async/close! ch)
+    (context/set-state context "completion")))
+
+(defn read-json-path-seq-go
+  [context resource-controller path-seq ch]
+  (async/go
+    (context/set-state context "init")
+    (loop [path (first path-seq)
+           path-seq (rest path-seq)]
+      (when path
+        (context/set-state context "step")
+        (context/increment-counter "processing-file")
+        (let [data (with-open [is (fs/input-stream path)]
+                     (resource-controller path read-json-path-seq-go ch)
+                     (json/read-keyworded is))]
+          (resource-controller path read-json-path-seq-go)  
+          (when (async/>! ch data)
+            (context/increment-counter "processed-file")
+            (recur (first path-seq) (rest path-seq))))))
     (async/close! ch)
     (context/set-state context "completion")))
 
