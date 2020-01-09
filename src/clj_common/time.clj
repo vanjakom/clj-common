@@ -46,6 +46,13 @@
      dateTimeFormatter
      (if (< timestamp 1000000000000) (* timestamp 1000) timestamp))))
 
+(defn date->timestamp [date]
+  (let [date-time-formatter (new java.text.SimpleDateFormat *date-format*)]
+    (.getTime
+     (.parse
+      date-time-formatter
+      date))))
+
 (defn millis->seconds [timestamp]
   (long (/ timestamp 1000)))
 

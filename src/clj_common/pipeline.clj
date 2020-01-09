@@ -739,3 +739,38 @@
     (doseq [ch in-seq] (async/close! ch))
     (async/close! out)
     (context/set-state context "completion")))
+
+(defn after-fn-go
+  "Executes given zero arity fn when input is closed. Propagates input to output"
+  [context in after-fn out]
+  (async/go
+    (context/set-state context "init")
+    (loop [data (async/<! in)]
+      (when data
+        (context/set-state context "step")
+        (context/counter context "in")
+        (when (async/>! out data)
+          (context/counter context "out")
+          (recur (async/<! in)))))
+    (async/close! out)
+    (context/set-state context "completion")
+    (after-fn)))
+
+(defn pass-last-go
+  "Propagates only last value to output."
+  [context in out]
+  (async/go
+    (context/set-state context "init")
+    (let [last (loop [data (async/<! in)
+                      previous nil]
+                 (if data
+                   (do
+                     (context/set-state context "step")
+                     (context/counter context "in")
+                     (recur (async/<! in) data))
+                   previous))]
+      (when last
+        (when (async/>! out last)
+          (context/counter context "out"))))
+    (async/close! out)
+    (context/set-state context "completion")))
