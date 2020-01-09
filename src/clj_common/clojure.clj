@@ -267,3 +267,12 @@
   (fn-to-call value)
   value)
 
+(defn run-async
+  [zero-arity-fn]
+  (.start
+   (new
+    java.lang.Thread
+    #(do
+       (println "running in:" (.getName (Thread/currentThread)))
+       (zero-arity-fn)
+       (println "finished in:" (.getName (Thread/currentThread)))))))
