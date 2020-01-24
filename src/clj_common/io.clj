@@ -215,3 +215,8 @@
 (defn buffer-output-stream->input-stream [buffer-output-stream]
   (let [byte-array (.toByteArray buffer-output-stream)]
     (new ByteArrayInputStream byte-array)))
+
+(defn decompress-gz [input-stream]
+  (new
+   java.util.zip.GZIPInputStream
+   input-stream))
