@@ -1,4 +1,6 @@
 (ns clj-common.pipeline
+  (:use
+   clj-common.clojure)
   (:require
    [clojure.core.async :as async]
    [clj-common.context :as context]
@@ -138,6 +140,33 @@
                (assoc channels channel-keyword (async/chan)))))
           channel-keyword))))))
 
+;;; state context reporting on fixed interval until at least one channel is open
+(defn create-state-context-reporting-finite-thread
+  "Creates, starts and returns thread that will on given interval in ms report context state"
+  [context reporting-interval-millis]
+  (let [thread (new
+                Thread
+                (fn []
+                  (.setName (Thread/currentThread) "context-reporting-thread")
+                  (try
+                    (loop []
+                      ((:context-print-fn context))
+                      (let [context-dump (:state ((:context-dump-fn context)))]
+                        (when
+                           (or
+                            (= (count context-dump) 0)
+                            (some?
+                             (seq
+                              (filter (complement #(= % "completion")) (vals context-dump)))))
+                           (do
+                             (Thread/sleep reporting-interval-millis)
+                             (recur)))))
+                    (report "pipeline finished")
+                    ((:context-print-fn context))
+                    (catch InterruptedException e ((:context-print-fn context))))))]
+    (.start thread)
+    thread))
+
 ;;; resource countroller concept
 ;;; to be used to control all stateful resources ( local fs, remote fs, cloudkit )
 ;;; content of entry in theory could be channel which when closed would stop reading / writing
@@ -198,7 +227,7 @@
                   #(.startsWith (path/name %) prefix)
                   (fs/list directory))]
       (context/set-state context "step")
-      (context/increment-counter "processing-file")
+      (context/increment-counter context "processing-file")
       (with-open [input-stream (fs/input-stream path)]
         (resource-control path read-line-go ch)
         (loop [line-seq (io/input-stream->line-seq input-stream)]
@@ -207,7 +236,7 @@
               (context/counter context "read")
               (recur (rest line-seq))))))
       (resource-control path read-line-go)
-      (context/increment-counter "processed-file"))
+      (context/increment-counter context "processed-file"))
     (async/close! ch)
     (context/set-state context "completion")))
 
@@ -219,13 +248,13 @@
            path-seq (rest path-seq)]
       (when path
         (context/set-state context "step")
-        (context/increment-counter "processing-file")
+        (context/increment-counter context "processing-file")
         (let [data (with-open [is (fs/input-stream path)]
                      (resource-controller path read-json-path-seq-go ch)
                      (json/read-keyworded is))]
           (resource-controller path read-json-path-seq-go)  
           (when (async/>! ch data)
-            (context/increment-counter "processed-file")
+            (context/increment-counter context "processed-file")
             (recur (first path-seq) (rest path-seq))))))
     (async/close! ch)
     (context/set-state context "completion")))
