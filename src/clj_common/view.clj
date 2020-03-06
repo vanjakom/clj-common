@@ -1,11 +1,18 @@
 (ns clj-common.view)
 
-(defn seq->map [key-gen-fn sequence]
-  (into
+(defn seq->map
+  ([key-gen-fn sequence]
+   (into
     {}
     (map
       (fn [element] [(key-gen-fn element) element])
       sequence)))
+  ([key-gen-fn value-gen-fn sequence]
+   (into
+    {}
+    (map
+      (fn [element] [(key-gen-fn element) (value-gen-fn element)])
+      sequence))))
 
 (defn seq->set
   ([set-or-seq]

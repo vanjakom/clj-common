@@ -24,6 +24,26 @@
 (defmethod read-keyworded :reader [reader]
   (json/read reader :key-fn keyword))
 
+(defmulti read
+  (fn [argument]
+    (cond
+      (instance? java.lang.String argument) :string
+      (instance? (Class/forName "[B") argument) :bytes
+      (instance? java.io.InputStream argument) :input-stream
+      (instance? java.io.Reader argument) :reader)))
+
+(defmethod read :string [line]
+  (json/read-str line))
+(defmethod read :bytes [bytes]
+  (with-open [reader (io/input-stream2reader
+                       (io/bytes->input-stream bytes))]
+    (json/read reader)))
+(defmethod read :input-stream [stream]
+  (with-open [reader (io/input-stream2reader stream)]
+    (json/read reader)))
+(defmethod read :reader [reader]
+  (json/read reader))
+
 (defn read-lines-keyworded
   "Reads line by line and deserializes single line as json object.
   Note: creates lazy structure, must be consumed before stream closed."
