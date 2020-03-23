@@ -2,6 +2,10 @@
 
 (require '[clojure.data.json :as json])
 
+;; note issues with unicode characters
+;; https://clojure.github.io/data.json/#clojure.data.json/write
+;; use :escape-unicode false
+
 (require '[clj-common.io :as io])
 
 (defmulti read-keyworded
@@ -54,27 +58,26 @@
       (line-seq (io/reader2buffered-reader reader)))))
 
 (defn write-to-string [object]
-  (json/write-str object))
+  (json/write-str object :escape-unicode false))
 
 (defn write-lines-to-string [object-seq]
   (clojure.string/join
     "\n"
     (map
-      json/write-str
+      #(json/write-str % :escape-unicode false)
       object-seq)))
 
 (defn write-to-writer [object writer]
-  (json/write object writer))
+  (json/write object writer :escape-unicode false))
 
 (defn write-to-stream [object output-stream]
   (let [writer (io/output-stream2writer output-stream)]
-    (json/write object writer)
+    (json/write object writer :escape-unicode false)
     (.flush writer)))
-
 
 (defn write-to-line-stream [object output-stream]
   (let [writer (io/output-stream2writer output-stream)]
-    (json/write object writer)
+    (json/write object writer :escape-unicode false)
     (.write writer 10) ; new line char
     (.flush writer)))
 
@@ -89,10 +92,6 @@
     (read-keyworded input-stream)))
 (def bytes->json deserialize)
 
-
-(comment
-  (deserialize
-    (serialize {:a 10})))
 
 
 
