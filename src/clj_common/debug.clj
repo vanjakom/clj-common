@@ -46,7 +46,12 @@
   []
   (clj-common.http-server/create-server
    7078
-   (compojure.core/GET
-    "/variable"
-    _
-    (clj-common.ring-middleware/expose-variable))))
+   (compojure.core/routes
+    (compojure.core/GET
+     "/variable"
+     _
+     (clj-common.ring-middleware/expose-variable))
+    (compojure.core/GET
+     "/plot"
+     _
+     (clj-common.ring-middleware/expose-plot)))))
