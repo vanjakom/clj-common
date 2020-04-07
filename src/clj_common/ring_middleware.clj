@@ -102,7 +102,7 @@
          (if-let [var (ns-resolve (symbol namespace) (symbol name))]
            {
             :status 200
-            :headers {"ContentType" "text/json"}
+            :headers {"Content-Type" "application/json; charset=utf-8"}
             :body (json/write-to-string (deref var))}
            {
             :status 404})))))))

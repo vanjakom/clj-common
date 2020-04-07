@@ -803,3 +803,18 @@
           (context/counter context "out"))))
     (async/close! out)
     (context/set-state context "completion")))
+
+(defn nil-go
+  "Reads input and discards it."
+  ([context in]
+   (async/go
+     (context/set-state context "init")
+     (loop [message (async/<! in)]
+       (if message
+         (do
+           (context/set-state context "step")
+           (context/counter context "in")
+           (recur (async/<! in)))
+         (context/set-state context "completion")))
+     :success)))
+
