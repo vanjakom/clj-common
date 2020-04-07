@@ -142,7 +142,9 @@
                   :body (let [buffer-output-stream (io/buffer-output-stream)]
                           (incanter-core/save
                             (incanter-charts/xy-plot (deref x-axis) (deref y-axis))
-                            buffer-output-stream)
+                            buffer-output-stream
+                            :width 1000
+                            :height 800)
                           (io/buffer-output-stream->input-stream buffer-output-stream))}
                 {
                   :status 404})
