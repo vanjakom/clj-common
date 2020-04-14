@@ -54,4 +54,8 @@
     (compojure.core/GET
      "/plot"
      _
-     (clj-common.ring-middleware/expose-plot)))))
+     (clj-common.ring-middleware/expose-plot))
+    (compojure.core/GET
+     "/time-plot"
+     _
+     (clj-common.ring-middleware/expose-timeseries-plot)))))
