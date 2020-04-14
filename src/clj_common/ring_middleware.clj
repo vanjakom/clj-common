@@ -154,7 +154,9 @@
               :status 404}))))))
 
 
-(defn expose-timeseries-plot []
+(defn expose-timeseries-plot
+  "Note: x axis values should be timestamps in millis"
+  []
   (ring.middleware.params/wrap-params
     (ring.middleware.keyword-params/wrap-keyword-params
       (fn [request]
