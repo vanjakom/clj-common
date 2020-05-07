@@ -142,7 +142,41 @@
                   :body (let [buffer-output-stream (io/buffer-output-stream)]
                           (incanter-core/save
                             (incanter-charts/xy-plot (deref x-axis) (deref y-axis))
-                            buffer-output-stream)
+                            buffer-output-stream
+                            :width 1000
+                            :height 800)
+                          (io/buffer-output-stream->input-stream buffer-output-stream))}
+                {
+                  :status 404})
+              {
+                :status 404})
+            {
+              :status 404}))))))
+
+
+(defn expose-timeseries-plot
+  "Note: x axis values should be timestamps in millis"
+  []
+  (ring.middleware.params/wrap-params
+    (ring.middleware.keyword-params/wrap-keyword-params
+      (fn [request]
+        (println request)
+        (let [namespace (or (:namespace (:params request)) "user")
+              x-axis-var (:x-axis (:params request))
+              y-axis-var (:y-axis (:params request))]
+          (if (and (some? namespace) (some? x-axis-var) (some? y-axis-var))
+            (if-let [x-axis (ns-resolve (symbol namespace) (symbol x-axis-var))]
+              (if-let [y-axis (ns-resolve (symbol namespace) (symbol y-axis-var))]
+                {
+
+                  :body (let [buffer-output-stream (io/buffer-output-stream)]
+                          (incanter-core/save
+                           (incanter-charts/time-series-plot
+                            (deref x-axis)
+                            (deref y-axis))
+                            buffer-output-stream
+                            :width 1000
+                            :height 800)
                           (io/buffer-output-stream->input-stream buffer-output-stream))}
                 {
                   :status 404})
