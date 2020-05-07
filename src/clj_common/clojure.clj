@@ -276,3 +276,9 @@
        (println "running in:" (.getName (Thread/currentThread)))
        (zero-arity-fn)
        (println "finished in:" (.getName (Thread/currentThread)))))))
+
+(defn url-encode [string]
+  (java.net.URLEncoder/encode string))
+
+(defn url-decode [encoded-string]
+  (java.net.URLDecoder/decode encoded-string))
