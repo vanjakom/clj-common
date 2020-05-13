@@ -101,6 +101,12 @@
 (defn environment-variable [name]
   (System/getenv name))
 
+(defn set-environment-variable [name value]
+  (let [env (System/getenv)
+        field (.getDeclaredField (.getClass env) "m")]
+    (.setAccessible field true)
+    (.put (.get field env) name value)))
+
 (defn fork-process
   "Forks process and collects std out and std err"
   [statement]
