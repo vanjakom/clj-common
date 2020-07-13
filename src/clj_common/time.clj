@@ -36,9 +36,9 @@
 			(clj-time.coerce/from-long timestamp))) " GMT"))
 (def timestamp-date  timestamp->date)
 
-(def ^:dynamic *date-format* "yyyy-MM-dd HH:mm:ss")
+(def ^:dynamic *date-time-format* "yyyy-MM-dd HH:mm:ss")
 (defn timestamp->date-in-timezone [timezone timestamp]
-  (let [dateTimeFormatter (new java.text.SimpleDateFormat *date-format*)]
+  (let [dateTimeFormatter (new java.text.SimpleDateFormat *date-time-format*)]
     (.setTimeZone
      dateTimeFormatter
      (java.util.TimeZone/getTimeZone "Europe/Belgrade"))
@@ -47,7 +47,7 @@
      (if (< timestamp 1000000000000) (* timestamp 1000) timestamp))))
 
 (defn date->timestamp [date]
-  (let [date-time-formatter (new java.text.SimpleDateFormat *date-format*)]
+  (let [date-time-formatter (new java.text.SimpleDateFormat *date-time-format*)]
     (.getTime
      (.parse
       date-time-formatter
@@ -60,6 +60,15 @@
   (* timestamp 1000))
 
 
+(let [date-format "yyyyMMdd"
+      dateTimeFormatter (new java.text.SimpleDateFormat date-format)]
+  (.setTimeZone
+   dateTimeFormatter
+   (java.util.TimeZone/getTimeZone "Europe/Belgrade"))
+  (defn date []
+    (.format
+     dateTimeFormatter
+     (System/currentTimeMillis))))
 
 (defmacro timed-fn [name & exprs]
   `(let [start# (System/nanoTime)]

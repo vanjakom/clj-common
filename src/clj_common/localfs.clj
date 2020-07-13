@@ -66,3 +66,20 @@
       (.list (new java.io.File (path/path->string path))))
     '()))
 
+
+(.getPath
+ (java.nio.file.FileSystems/getDefault)
+ "tmp"
+ (into-array String ["tmp" "input"]))
+
+(defn link
+  "Creates symoblic link"
+  [target-path link-path]
+  (let [file-system (java.nio.file.FileSystems/getDefault)
+        path->nio-path #(.getPath file-system (str "/" (first %)) (into-array String (rest %)))]
+    (java.nio.file.Files/createSymbolicLink
+     (path->nio-path link-path)
+     (path->nio-path target-path)
+     (into-array java.nio.file.attribute.FileAttribute []))))
+
+#_(link ["tmp" "input"] ["tmp" "link"])
