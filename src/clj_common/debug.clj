@@ -1,7 +1,9 @@
 (ns clj-common.debug
   (:require
+   clojure.pprint
    clj-common.http-server
-   clj-common.ring-middleware))
+   clj-common.ring-middleware
+   clj-common.io))
 
 (defn print-and-return [value]
   (println value)
@@ -47,6 +49,16 @@
   (clj-common.http-server/create-server
    7078
    (compojure.core/routes
+    (compojure.core/ANY
+     "/echo"
+     _
+     (fn [request]
+       (clojure.pprint/pprint request)
+       (run!
+        println
+        (clj-common.io/input-stream->line-seq (:body request)))
+       {:status 200}))
+    
     (compojure.core/GET
      "/variable"
      _
@@ -61,3 +73,4 @@
      (clj-common.ring-middleware/expose-timeseries-plot)))))
 
 (run-debug-server)
+
