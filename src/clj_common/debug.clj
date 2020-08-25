@@ -3,7 +3,8 @@
    clojure.pprint
    clj-common.http-server
    clj-common.ring-middleware
-   clj-common.io))
+   clj-common.io
+   [clj-common.json :as json]))
 
 (defn print-and-return [value]
   (println value)
@@ -54,10 +55,10 @@
      _
      (fn [request]
        (clojure.pprint/pprint request)
-       (run!
-        println
-        (clj-common.io/input-stream->line-seq (:body request)))
-       {:status 200}))
+       (let [data (json/read-keyworded (:body request))]
+         {
+          :status 200
+          :body (json/write-to-string data)})))
     
     (compojure.core/GET
      "/variable"
