@@ -135,7 +135,11 @@
                      body-stream))]
       (if (= (:status response) 200)
         (:body response)
-        nil))
+        (do
+          (logging/report {
+                           :fn clj-common.http/put-as-stream
+                           :status (:status response)})
+          nil)))
     (catch Exception e (logging/report-throwable {:url url} e)))))
 
 
