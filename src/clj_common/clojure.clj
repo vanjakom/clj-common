@@ -277,8 +277,15 @@
        (zero-arity-fn)
        (println "finished in:" (.getName (Thread/currentThread)))))))
 
+(defn thread-list []
+  (.keySet (Thread/getAllStackTraces)))
+
 (defn url-encode [string]
   (java.net.URLEncoder/encode string))
 
 (defn url-decode [encoded-string]
   (java.net.URLDecoder/decode encoded-string))
+
+(defn uuid []
+  (.toString (java.util.UUID/randomUUID)))
+
