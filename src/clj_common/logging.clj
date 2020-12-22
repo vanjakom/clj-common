@@ -1,5 +1,6 @@
 (ns clj-common.logging
   (:require
+   clojure.pprint
    [clj-common.io :as io]
    [clj-common.localfs :as fs]
    [clj-common.path :as path]
@@ -11,7 +12,7 @@
 
 (def logger (agent nil))
 
-(defn report
+#_(defn report
   "Lazy opens <jvm-path>/logging for output"
   [object]
   (send
@@ -36,6 +37,18 @@
         output-stream)))
   nil)
 
+(defn report
+  "Uses agent to report to std"
+  [object]
+  (send
+   logger
+   (fn [_]
+     (if (coll? object)
+       (clojure.pprint/pprint object)
+       (clojure.pprint/pprint {:message object}))
+     nil))
+  nil)
+
 (defn report-throwable
   ([t]
    (report-throwable {} t))
@@ -50,3 +63,5 @@
                 (fn [element]
                   (.toString element))
                 (.getStackTrace t))))))
+
+#_(report-throwable (new Exception "test"))

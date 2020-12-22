@@ -448,6 +448,23 @@
     (context/set-state context "completion")
     :success))
 
+(defn capture-atom-seq-go
+  "Captures sequence of objects coming from stream to given atom. Not atomic, updates
+  atom on each object"
+  [context in atom]
+  (async/go
+    (context/set-state context "init")
+    (swap! atom (constantly []))
+    (loop [object (async/<! in)]
+      (context/set-state context "step")
+      (when object
+        (context/counter context "in")
+        (swap! atom conj object)
+        (recur (async/<! in))))
+    (context/set-state context "completion")
+    :success))
+
+
 (defn broadcast-go
   "Broadcasts messages from channel to multiple channels. Synchronously."
   [context in & outs]
