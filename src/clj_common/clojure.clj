@@ -289,3 +289,25 @@
 (defn uuid []
   (.toString (java.util.UUID/randomUUID)))
 
+(defn split-at-fn
+  "Returns array of two arrays. First contains elements of collection until
+  predicate is matched and matched element. Second will contain rest of elements."
+  [fn coll]
+  (loop [before []
+         after (into [] coll)]
+    (if-let [next (first after)]
+      (if (fn next)
+        [(conj before next) (into []  (rest after))]
+        (recur
+         (conj before next)
+         (into [] (rest after))))
+      [before after])))
+
+#_(split-at-fn #(= % 6) [1 2 3]) ;; [[1 2 3] []]
+#_(split-at-fn #(= % 6) [6 2 3]) ;; [[6] [2 3]]
+#_(split-at-fn #(= % 6) [6 2 6]) ;; [[6] [2 6]]
+#_(split-at-fn #(= % 6) [1 2 6]) ;; [[1 2 6] []]
+#_(split-at-fn #(= % 6) [6]) ;; [[6] []]
+#_(split-at-fn #(= % 6) []) ;; [[] []]
+#_(split-at-fn #(= % 6) [1 6 3]) ;; [[1 6] [3]]
+
