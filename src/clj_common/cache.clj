@@ -40,6 +40,7 @@
      (let [path (path/child
                   cache-path
                   (key-fn key))]
+
        (if (fs/exists? path)
          (with-open [input-stream (fs/input-stream path)]
            (value-deserialize-fn (io/input-stream->bytes input-stream))))))

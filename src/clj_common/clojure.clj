@@ -198,7 +198,7 @@
 
 (defn todo-warn [& args]
   (let [info (clojure.string/join args)]
-    (logging/report {:type :todo :message (if (empty? info) "todo" info)})))
+    (println {:type :todo :message (if (empty? info) "todo" info)})))
 
 
 ;;; https://stackoverflow.com/questions/1879885/clojure-how-to-to-recur-upon-exception

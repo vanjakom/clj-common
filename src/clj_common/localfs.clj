@@ -32,11 +32,13 @@
 
 (defn input-stream
   "Creates input stream for given path"
+  ^java.io.InputStream
   [path]
   (new java.io.FileInputStream (path/path->string path)))
 
 (defn output-stream
   "Creates output stream for given path"
+  ^java.io.OutputStream
   [path]
   (mkdirs (path/parent path))
   (new java.io.FileOutputStream ^String (path/path->string path)))

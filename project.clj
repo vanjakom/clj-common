@@ -39,4 +39,7 @@
                  ;; visualization
                  [incanter "1.5.7"]
 
-                 [funcool/cats "2.1.0"]])
+                 ;; is it used?
+                 [funcool/cats "2.1.0"]
+
+                 [com.mungolab/clj-common-java "0.3.0-SNAPSHOT"]])

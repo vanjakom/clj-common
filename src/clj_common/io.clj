@@ -56,8 +56,9 @@
     (new
       java.io.InputStreamReader input-stream)))
 
-(defn output-stream2writer [output-stream]
+(defn output-stream->writer [output-stream]
   (new java.io.OutputStreamWriter output-stream))
+(def output-stream2writer output-stream->writer)
 
 (defn output-stream2buffered-writer [output-stream]
   (new

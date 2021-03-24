@@ -103,6 +103,13 @@
         nil))
     (catch Exception e (logging/report-throwable {:url url} e)))))
 
+(defn post-form-as-string
+  [url form-map]
+  (:body
+   (clj-http/post
+    url
+    {:form-params form-map})))
+
 (defn put-raw-as-stream [url body-stream]
   (try
     (let [response (clj-http/put

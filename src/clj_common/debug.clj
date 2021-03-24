@@ -43,13 +43,22 @@
      :read readr
      :eval (partial contextual-eval (local-context))))
 
+(def ^:dynamic *port* 7078)
+
 ;; example url
 ;; http://localhost:7078/variable?namespace=a&name=variable
 (defn run-debug-server
   []
   (clj-common.http-server/create-server
-   7078
+   *port*
    (compojure.core/routes
+    (compojure.core/GET
+     "/hello"
+     _
+     (fn [request]
+       {
+      :status 200
+      :body "hello world"}))
     (compojure.core/ANY
      "/echo"
      _
@@ -73,5 +82,5 @@
      _
      (clj-common.ring-middleware/expose-timeseries-plot)))))
 
-(run-debug-server)
+#_(run-debug-server)
 
