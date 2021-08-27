@@ -17,9 +17,11 @@
      (fn [request]
        (if (= (:request-method request) :get)
          (let [url (str
-                    "http://" destination-host
+                    (if (.contains destination-host "://")
+                      destination-host
+                      (str "http://" destination-host))
                     (when
-                        destination-port
+                        (> destination-port 0)
                       (str ":" destination-port))
                     (:uri request)
                     (when (:query-string request)

@@ -57,7 +57,7 @@
       java.io.InputStreamReader input-stream)))
 
 (defn output-stream->writer [output-stream]
-  (new java.io.OutputStreamWriter output-stream))
+  (new java.io.OutputStreamWriter output-stream "UTF-8"))
 (def output-stream2writer output-stream->writer)
 
 (defn output-stream2buffered-writer [output-stream]
@@ -104,7 +104,7 @@
   (.write output-stream bytes))
 
 (defn write-string [output-stream string]
-  (.write output-stream (.getBytes string)))
+  (.write output-stream (.getBytes string "utf-8")))
 
 (defn write-line [output-stream line]
   (.write output-stream (.getBytes line))

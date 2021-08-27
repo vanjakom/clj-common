@@ -1,5 +1,7 @@
 (ns clj-common.2d
-  (:import javax.imageio.ImageIO))
+  (:import javax.imageio.ImageIO)
+  (:require
+   [clj-common.io :as io]))
 
 ; structures
 ; point
@@ -171,3 +173,10 @@
     image-context
     "PNG"
     output-stream))
+
+(defn image-context->input-stream
+  "Writes image to PNG bytes and provides input-stream"
+  [image-context]
+  (let [buffer-output-stream (io/create-buffer-output-stream)]
+    (write-png-to-stream image-context buffer-output-stream)
+    (io/buffer-output-stream->input-stream buffer-output-stream)))

@@ -75,6 +75,11 @@
     (json/write object writer :escape-unicode false)
     (.flush writer)))
 
+(defn write-pretty-print [object writer]
+  (binding [*out* writer
+            *print-length* Long/MAX_VALUE]
+    (json/pprint object :escape-unicode false)))
+
 (defn write-to-line-stream [object output-stream]
   (let [writer (io/output-stream2writer output-stream)]
     (json/write object writer :escape-unicode false)
