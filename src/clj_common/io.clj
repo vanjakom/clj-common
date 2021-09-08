@@ -221,3 +221,9 @@
   (new
    java.util.zip.GZIPInputStream
    input-stream))
+
+(defn create-string-writer []
+  (new java.io.StringWriter))
+
+(defn string-writer->string [string-writer]
+  (.toString string-writer))
