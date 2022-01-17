@@ -46,7 +46,7 @@
 
 (defn input-stream->buffered-reader [input-stream]
   (new java.io.BufferedReader
-       (new java.io.InputStreamReader input-stream)))
+       (new java.io.InputStreamReader input-stream "UTF-8")))
 
 (def input-stream2buffered-reader input-stream->buffered-reader)
 
