@@ -50,6 +50,19 @@
     :blue (float (/ blue 255))
     :alpha (float (/ alpha 255))}))
 
+(defn hex->color
+  "Converts hex color representation ( HTML ) to color used in draw methods"
+  [hex-string]
+  (let [color (java.awt.Color/decode hex-string)]
+    {
+     :red (/ (float (.getRed color)) 255)
+     :green (/ (float (.getGreen color)) 255)
+     :blue (/ (float (.getBlue color)) 255)
+     :alpha (/ (float (.getAlpha color)) 255)}))
+
+#_(hex->color "#ff0000") ;; {:red 1.0, :green 0.0, :blue 0.0, :alpha 1.0}
+#_(hex->color "#0000FF") ;; {:red 0.0, :green 0.0, :blue 1.0, :alpha 1.0}
+
 (defn color->awt-color [color]
   (new
    java.awt.Color

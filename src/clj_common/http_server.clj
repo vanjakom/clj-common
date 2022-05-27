@@ -60,6 +60,7 @@
 
 (declare stop-server)
 
+
 (defn create-server [port handler]
   (logging/report "new code")
   (if-let [old-handle (get @servers port)]
@@ -73,6 +74,31 @@
                         handler
                         {
                           :port port
+                          :join? false})]
+    (logging/report {:fn 'clj-common.http-server/create-server
+                     :port port
+                     :message "started server"})
+    (swap! servers assoc port server-handle)
+    server-handle))
+
+(defn create-https-server [port keystore-file-name keystore-password handler]
+  (logging/report "new code")
+  (if-let [old-handle (get @servers port)]
+    (do
+      (logging/report {:fn 'clj-common.http-server/create-server
+                       :port port
+                       :message "stopped old server"})
+      (stop-server old-handle)))
+
+  (let [server-handle (ring.adapter.jetty/run-jetty
+                        handler
+                        {
+                         :ssl true
+                         :ssl-port port
+                         :keystore keystore-file-name
+                         :key-password keystore-password
+                         :truststore keystore-file-name
+                         :trust-password keystore-password
                           :join? false})]
     (logging/report {:fn 'clj-common.http-server/create-server
                      :port port
