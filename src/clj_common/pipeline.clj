@@ -835,3 +835,25 @@
          (context/set-state context "completion")))
      :success)))
 
+(defn create-lookup-go
+  "Reads objects from in, aggregates them in map using key-fn to calculate
+  key and result of value-fn on object as value. Once in is closed created
+  map is sent to out"
+  [context in key-fn value-fn out]
+  (async/go
+    (context/set-state context "init")
+    (loop [lookup {}
+           object (async/<! in)]
+      (if object
+        (do
+          (context/set-state context "step")
+          (context/increment-counter context "in")
+          (recur
+           (assoc lookup (key-fn object) (value-fn object))
+           (async/<! in)))
+        (do
+          (async/>! out lookup)
+          (context/increment-counter context "out")
+          (async/close! out)
+          (context/set-state context "completion"))))))
+

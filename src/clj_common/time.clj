@@ -37,11 +37,12 @@
 (def timestamp-date  timestamp->date)
 
 (def ^:dynamic *date-time-format* "yyyy-MM-dd HH:mm:ss")
-(defn timestamp->date-in-timezone [timezone timestamp]
+(def ^:dynamic *timezone* "Europe/Belgrade")
+(defn timestamp->date-in-timezone [timestamp]
   (let [dateTimeFormatter (new java.text.SimpleDateFormat *date-time-format*)]
     (.setTimeZone
      dateTimeFormatter
-     (java.util.TimeZone/getTimeZone "Europe/Belgrade"))
+     (java.util.TimeZone/getTimeZone *timezone*))
     (.format
      dateTimeFormatter
      (if (< timestamp 1000000000000) (* timestamp 1000) timestamp))))

@@ -60,10 +60,12 @@
   (new java.io.OutputStreamWriter output-stream "UTF-8"))
 (def output-stream2writer output-stream->writer)
 
-(defn output-stream2buffered-writer [output-stream]
+(defn output-stream->buffered-writer [output-stream]
   (new
     java.io.BufferedWriter
     (new java.io.OutputStreamWriter output-stream)))
+
+(def output-stream2buffered-writer output-stream->buffered-writer)
 
 (defn input-stream->bytes [input-stream]
   (org.apache.commons.io.IOUtils/toByteArray input-stream))

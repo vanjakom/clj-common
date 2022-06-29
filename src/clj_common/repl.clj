@@ -89,4 +89,3 @@
       (clojure.tools.nrepl/client conn 1000)
       (clojure.tools.nrepl/message {:op "eval" :code string-to-eval})
       clojure.tools.nrepl/response-values)))
-
