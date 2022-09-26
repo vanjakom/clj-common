@@ -857,3 +857,15 @@
           (async/close! out)
           (context/set-state context "completion"))))))
 
+(defn wait-pipeline
+  "Uses calling thread to busy wait until all channels used by pipeline
+  represented with channel-provider are not closed"
+  [channel-provider]
+  (loop [channel-map (channel-provider)]
+    #_(println "channels in pipeline:" (count channel-map))
+    #_(doseq [[name channel] channel-map]
+      (println "\t" name "\t" (closed? channel)))
+    (when (some? (first (filter (complement closed?) (vals channel-map))))
+      #_(println "waiting")
+      (sleep 500)
+      (recur (channel-provider)))))

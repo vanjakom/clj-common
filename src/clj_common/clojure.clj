@@ -290,6 +290,9 @@
 (defn uuid []
   (.toString (java.util.UUID/randomUUID)))
 
+(defn sleep [millis]
+  (Thread/sleep millis ))
+
 (defn split-at-fn
   "Returns array of two arrays. First contains elements of collection until
   predicate is matched and matched element. Second will contain rest of elements."
