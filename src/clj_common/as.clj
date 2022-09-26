@@ -26,7 +26,9 @@
   (.intValue value))
 
 (defmethod as-integer :string [value]
-  (Integer/parseInt value))
+  (try
+    (Integer/parseInt value)
+    (catch Exception e nil)))
 
 (def ^:dynamic *default-integer* (int 0))
 (defmethod as-integer :nil [_]
@@ -51,7 +53,9 @@
   (.longValue value))
 
 (defmethod as-long :string [value]
-  (Long/parseLong value))
+  (try
+    (Long/parseLong value)
+    (catch Exception e nil)))
 
 (def ^:dynamic *default-long* (long 0))
 (defmethod as-long :nil [_]
@@ -59,8 +63,6 @@
 
 (defmethod as-long :unknown [value]
   (throw (new RuntimeException (str "No transformer to Long from " (class value)))))
-
-
 
 ;; double
 
@@ -77,7 +79,9 @@
   (.doubleValue value))
 
 (defmethod as-double :string [value]
-  (Double/parseDouble value))
+  (try
+    (Double/parseDouble value)
+    (catch Exception e nil)))
 
 (def ^:dynamic *default-double* (clojure.core/double 0))
 (defmethod as-double :nil [_]
