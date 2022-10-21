@@ -437,7 +437,7 @@
   [context in var]
   (async/go
     (context/set-state context "init")
-    (loop [state (list)
+    (loop [state []
            object (async/<! in)]
       (context/set-state context "step")
       (if object
@@ -464,6 +464,22 @@
     (context/set-state context "completion")
     :success))
 
+(defn capture-atom-seq-atomic-go
+  "Atomic version of capture-atom-seq-go, accumulates objects read from channel,
+  updates atom once channel is closed"
+  [context in atom]
+    (async/go
+    (context/set-state context "init")
+    (loop [state []
+           object (async/<! in)]
+      (context/set-state context "step")
+      (if object
+        (do
+          (context/counter context "in")
+          (recur (conj state object) (async/<! in)))
+        (swap! atom (constantly state))))
+    (context/set-state context "completion")
+    :success))
 
 (defn broadcast-go
   "Broadcasts messages from channel to multiple channels. Synchronously."
