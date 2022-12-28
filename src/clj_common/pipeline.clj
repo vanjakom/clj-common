@@ -409,10 +409,10 @@
   Note: for capture of sequence use capture-seq-go."
   [context in var]
   (async/go
-    (context/set-state context "capture-init")
+    (context/set-state context "init")
     (let [object (async/<! in)]
       (alter-var-root var (constantly object)))
-    (context/set-state context "capture-completion")
+    (context/set-state context "completion")
     :success))
 
 (defn capture-var-seq-go
