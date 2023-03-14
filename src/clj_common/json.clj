@@ -57,6 +57,15 @@
       #(read-keyworded %1)
       (line-seq (io/reader2buffered-reader reader)))))
 
+(defn read-lines
+  "Reads line by line and deserializes single line as json object.
+  Note: creates lazy structure, must be consumed before stream closed."
+  [input-stream]
+  (let [reader (io/input-stream2reader input-stream)]
+    (map
+      #(clj-common.json/read %1)
+      (line-seq (io/reader2buffered-reader reader)))))
+
 (defn write-to-string [object]
   (json/write-str object :escape-unicode false))
 
