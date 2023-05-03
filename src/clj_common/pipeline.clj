@@ -448,12 +448,22 @@
     (context/set-state context "completion")
     :success))
 
+(defn capture-atom-go
+  "Captures object from channel into atom."
+  [context in atom]
+  (async/go
+    (context/set-state context "init")
+    (let [object (async/<! in)]
+      (swap! atom (constantly object)))
+    (context/set-state context "completion")
+    :success))
+
 (defn capture-atom-seq-go
   "Captures sequence of objects coming from stream to given atom. Not atomic, updates
   atom on each object"
   [context in atom]
+  (context/set-state context "init")
   (async/go
-    (context/set-state context "init")
     (swap! atom (constantly []))
     (loop [object (async/<! in)]
       (context/set-state context "step")
@@ -625,8 +635,8 @@
                          ([] nil) 
                          ([state entry] entry)
                          ([state] nil)))]
+    (context/set-state context "init")
     (async/go
-      (context/set-state context "init")
       ;; doesn't have effect
       (transducer-fn)
       (loop [object (async/<! in)]
@@ -885,3 +895,9 @@
       #_(println "waiting")
       (sleep 500)
       (recur (channel-provider)))))
+
+(defn wait-pipeline-output
+  "Waits on channel which produces final output. Once something is read from
+  channel it's assumed that pipeline is finished"
+  [channel]
+  (async/<!! channel))
