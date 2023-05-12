@@ -94,6 +94,32 @@
     (.drawPolygon graphics x-coords y-coords (count x-coords))
     (.dispose graphics)))
 
+(defn draw-polyline [image-context points color]
+  (let [x-coords (int-array (map :x points))
+        y-coords (int-array (map :y points))
+        color (color->awt-color color)
+        graphics (.getGraphics image-context)]
+    (.setColor graphics color)
+    (.drawPolyline graphics x-coords y-coords (count x-coords))
+    (.dispose graphics)))
+
+(defn draw-polyline [image-context points color width]
+  (let [x-coords (int-array (map :x points))
+        y-coords (int-array (map :y points))
+        color (color->awt-color color)
+        graphics (.getGraphics image-context)]
+    (.setColor graphics color)
+    (.setStroke graphics
+                (new java.awt.BasicStroke
+                     width
+                     java.awt.BasicStroke/CAP_ROUND
+                     java.awt.BasicStroke/JOIN_ROUND))
+    (.setRenderingHint graphics
+                       java.awt.RenderingHints/KEY_ANTIALIASING
+                       java.awt.RenderingHints/VALUE_ANTIALIAS_ON)
+    (.drawPolyline graphics x-coords y-coords (count x-coords))
+    (.dispose graphics)))
+
 (defn draw-image [image-context [center-x center-y] sprite-image-context]
   ; what to do with background color
   ; render with offset, check if it fits ... skip if not
