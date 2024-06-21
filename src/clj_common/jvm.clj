@@ -1,8 +1,9 @@
 (ns clj-common.jvm
   (:require
-    [clojure.java.io :as io]
-    [clj-common.path :as path]
-    [clj-common.localfs :as fs]))
+   [clojure.java.io :as cljio]
+   [clj-common.io :as io]
+   [clj-common.path :as path]
+   [clj-common.localfs :as fs]))
 
 (defn get-memory []
   (let [runtime (Runtime/getRuntime)
@@ -86,8 +87,9 @@
 
 ; todo potential problem with loader used, using context class loader
 (defn resource-as-stream [path-in-jar]
-  (if-let [resource-url (io/resource (.substring (path/path->string path-in-jar) 1))]
-    (io/input-stream resource-url)))
+  (if-let [resource-url (cljio/resource (.substring (path/path->string path-in-jar) 1))]
+    (cljio/input-stream resource-url
+     )))
 
 (defn print-threads []
   (let [threads (get-threads)]
@@ -101,7 +103,9 @@
 (defn environment-variable [name]
   (System/getenv name))
 
-(defn set-environment-variable [name value]
+;; not easily-possible anymore in hava 17
+;; https://www.baeldung.com/java-set-environment-variable-runtime
+#_(defn set-environment-variable [name value]
   (let [env (System/getenv)
         field (.getDeclaredField (.getClass env) "m")]
     (.setAccessible field true)
@@ -114,6 +118,26 @@
                  (Runtime/getRuntime)
                  statement)]
     [(.getInputStream process) (.getErrorStream process)]))
+
+(defn execute-command
+  "Forks process and executes command with given PWD. Returns input
+  stream of stdout"
+  [pwd command]
+  (let [process (.exec (Runtime/getRuntime)
+                       command
+                       (into-array java.lang.String [])
+                       (new java.io.File pwd))
+        is (.getInputStream process)]
+    ;; wait process to finish to collect output
+    (.waitFor process)
+    is))
+
+#_(run!
+ println
+ (io/input-stream->line-seq
+  (execute-command
+   "/Users/vanja/projects/trek-mate-pins"
+   "git status")))
 
 (defn random-uuid [] (.toString (java.util.UUID/randomUUID)))
 
@@ -149,3 +173,8 @@
     (doseq [[key value] map]
       (.put java-hash-map key value))
     java-hash-map))
+
+(defn java-version []
+  (System/getProperty "java.vm.specification.version"))
+
+#_(java-version) ;; "21"

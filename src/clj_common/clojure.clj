@@ -212,8 +212,9 @@
     (if-let [result (try
                       [(thunk)]
                       (catch Exception e
-                        (when (zero? n)
-                          (throw e))))]
+                        (if (zero? n)
+                          (throw e)
+                          (println "retrying ..."))))]
       (result 0)
       (recur (dec n)))))
 
@@ -250,7 +251,7 @@
   nil)
 
 ;;; https://stackoverflow.com/questions/43213573/get-in-for-lists
-(defn get-in
+(defn get-in*
   "Modified version of get-in which supports lists"
   [structure key-seq]
   (reduce

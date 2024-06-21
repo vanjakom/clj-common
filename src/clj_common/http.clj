@@ -5,6 +5,9 @@
    [clj-common.base64 :as base64]
    [clj-common.logging :as logging]))
 
+;; DEPRECATED
+;; adds compexity, clj-http.client is easy enough to use directly
+
 (def ^:dynamic *throw-exception* false)
 (def ^:dynamic *configuration* {
                                 :as :stream

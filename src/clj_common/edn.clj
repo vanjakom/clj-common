@@ -1,7 +1,8 @@
 (ns clj-common.edn
   (:require
    [clj-common.io :as io]
-   [clojure.edn :as edn]))
+   [clojure.edn :as edn]
+   [clojure.pprint :as pprint]))
 
 (defn write-object
   "Writes given object serialized either to output stream or string depending on
@@ -15,6 +16,16 @@
   ([object]
    (binding [*print-length* nil]
      (clojure.string/trim-newline (prn-str object)))))
+
+(defn write-pprint-object
+  "Writes given object serialized either to output stream or string depending on
+  arity called. Writes object without new line at end to confirm with rest of fns.
+  Uses clojure.pprint to achive pretty print."
+  ([object]
+   (clojure.string/trim-newline (with-out-str (pprint/pprint object))))
+  ([output-stream object]
+   (let [output (write-pprint-object object)]
+     (io/write output-stream (.getBytes output "UTF-8")))))
 
 (defn read-object [input-stream]
   (edn/read (io/input-stream->pushback-reader input-stream)))

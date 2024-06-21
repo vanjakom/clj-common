@@ -14,7 +14,7 @@
 
 
                  [clj-time "0.11.0"]
-                 [clj-http "2.2.0"]
+                 [clj-http "3.12.3"]
 
                  [commons-lang/commons-lang "2.6"]                 
                  [commons-io/commons-io "2.5"]
