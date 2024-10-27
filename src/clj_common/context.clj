@@ -8,23 +8,37 @@
 ;;; different context impementations should implement only scope* fns, extending
 ;;; base context map ...
 
+;; 20240929, merge clj-scheduler job context with pipeline context
+;; job is something:
+;; that has configuration
+;; that produces log during processing
+;; that increment counters
+;; that reads / writes to persistent store
+
 (def context
   {
    ;; prefix which will be used during reporting
    :scope :string
 
    :counter-fn [:fn :string :nil]
-   :scope-counter-fn [:fn :scope :string :nil]
-
    :state-fn [:fn :object :nil]
-   :scope-state-fn [:fn :scope :object :nil]
-
    :trace-fn [:fn :string :nil]
-   :scope-trace-fn [:fn :scope :string :nil]
-   
    ;; called when processing fails with exception
    :error-fn [:fn :throwable :object :nil]
-   :scope-error-fn [:fn :scope :throwable :object :nil]})
+
+   ;; fns down should be implemented, wrap-scope will fix
+   ;; scope, counter-fn, state-fn, trace-fn
+   
+   :scope-counter-fn [:fn :scope :string :nil]
+   :scope-state-fn [:fn :scope :object :nil]
+   :scope-trace-fn [:fn :scope :string :nil]
+   :scope-error-fn [:fn :scope :throwable :object :nil]
+   
+   ;; global fns, added for clj-scheduler merge
+   :configuration [:fn :map]
+   :store-get [:fn :string-array :object :object]
+   :store-set [:fn :string-array :object :nil]
+   })
 
 (defn wrap-scope
   ([context scope]
@@ -124,6 +138,20 @@
 (defn error
   ([context throwable data] ((:error-fn context) throwable data))
   ([throwable data] (error *context* throwable data)))
+
+;; added to support clj-scheduler jobs
+
+(defn configuration
+  ([context] (:configuration context))
+  ([] (:configuration *context*)))
+
+(defn store-get
+  ([context keys] ((:store-get context) keys))
+  ([] ((:store-get *context*) keys)))
+
+(defn store-set
+  ([context keys value] ((:store-set context) keys value))
+  ([keys value] ((:store-set *context*) keys value)))
 
 (defn print-state-context [context]
   ((:context-print-fn context)))
