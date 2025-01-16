@@ -5,7 +5,24 @@
 
 (set! *warn-on-reflection* true)
 
-; from early days :)
+;; chatgpt
+(defn get-stack-trace [e]
+  (with-out-str
+    (.printStackTrace e)))
+
+;; chatgpt
+(defn format-stack-trace [^Throwable e]
+  (let [stack-trace (.getStackTrace e) ; Get the array of stack trace elements
+        cause (.getCause e)]          ; Get the cause of the exception
+    (with-out-str
+      (println (.toString e))   ; Print the exception message and type
+      (doseq [el stack-trace]   ; Iterate over stack trace elements
+        (println "\tat" el))    ; Print each stack trace element
+      (when cause          ; If there is a cause, print it recursively
+        (println "Caused by:")
+        (print (format-stack-trace cause))))))
+
+;; from early days :)
 (defn not-nil? [value]
   (some? value))
 

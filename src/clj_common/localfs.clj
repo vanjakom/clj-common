@@ -14,14 +14,41 @@
 (defn move
   "Performs move of file"
   [src-path dest-path]
-  (when-not (.renameTo
-    (new java.io.File (path/path->string src-path))
-    (new java.io.File (path/path->string dest-path)))
-    (throw (ex-info
-            "Unable to move file"
-            {
-             :source src-path
-             :destination dest-path}))))
+  ;; old implementation, not working across drives
+  #_(when-not (.renameTo
+               (new java.io.File (path/path->string src-path))
+               (new java.io.File (path/path->string dest-path)))
+      (throw (ex-info
+              "Unable to move file"
+              {
+               :source src-path
+               :destination dest-path})))
+
+  (let [source (java.nio.file.Paths/get
+                (path/path->string src-path) (into-array String []))
+        destination (java.nio.file.Paths/get
+                     (path/path->string dest-path) (into-array String []))]
+    (java.nio.file.Files/move
+     source
+     destination
+     (into-array [java.nio.file.StandardCopyOption/REPLACE_EXISTING]))))
+
+#_(move ["tmp" "test"] ["tmp" "move"])
+
+
+(defn copy
+  "Performs copy of file"
+  [src-path dest-path]
+  (let [source (java.nio.file.Paths/get
+                (path/path->string src-path) (into-array String []))
+        destination (java.nio.file.Paths/get
+                     (path/path->string dest-path) (into-array String []))]
+    (java.nio.file.Files/copy
+     source
+     destination
+     (into-array [java.nio.file.StandardCopyOption/REPLACE_EXISTING]))))
+
+#_(move ["tmp" "test"] ["tmp" "copy"])
 
 (defn delete
   "Removes file or directory"
