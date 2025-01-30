@@ -48,4 +48,3 @@
   "Transforms line EDN input stream to seq of objects"
   [input-stream]
   (map read (io/input-stream->line-seq input-stream)))
-
