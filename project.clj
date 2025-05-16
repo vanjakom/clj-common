@@ -43,4 +43,4 @@
                  ;; is it used?
                  [funcool/cats "2.1.0"]
 
-                 [com.mungolab/clj-common-java "0.3.0-SNAPSHOT"]])
+                 [com.mungolab/clj-common-java "0.3.0"]])
