@@ -1,4 +1,4 @@
-(defproject com.mungolab/clj-common "0.3.1"
+(defproject com.mungolab/clj-common "0.3.2"
   :description "common functions"
   :url "https://github.com/vanjakom/clj-common"
   :license {:name "Eclipse Public License"
@@ -34,6 +34,7 @@
                  [ring/ring-jetty-adapter "1.14.1"]
                  [ring/ring-json "0.5.1"]
                  [ring/ring-codec "1.3.0"]
+                 [hiccup "2.0.0-RC5"]
 
                  ;; json
                  [com.fasterxml.jackson.core/jackson-core "2.14.2"]
