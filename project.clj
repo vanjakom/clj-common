@@ -1,4 +1,4 @@
-(defproject com.mungolab/clj-common "0.4.0-SNAPSHOT"
+(defproject com.mungolab/clj-common "0.3.1"
   :description "common functions"
   :url "https://github.com/vanjakom/clj-common"
   :license {:name "Eclipse Public License"
@@ -30,8 +30,15 @@
 
                  ;; http stack
                  [compojure "1.5.0"]
-                 [ring "1.14.1"]
-                 [ring/ring-json "0.5.1" :exclusions [com.fasterxml.jackson.core/jackson-core]]
+                 [ring/ring-core "1.14.1"]
+                 [ring/ring-jetty-adapter "1.14.1"]
+                 [ring/ring-json "0.5.1"]
+                 [ring/ring-codec "1.3.0"]
+
+                 ;; json
+                 [com.fasterxml.jackson.core/jackson-core "2.14.2"]
+                 [com.fasterxml.jackson.core/jackson-databind "2.14.2"]
+                 [com.fasterxml.jackson.core/jackson-annotations "2.14.2"]
 
                  ;; mail sending
                  [com.draines/postal "2.0.2"]
