@@ -177,6 +177,9 @@
 (defn print-state-context [context]
   ((:context-print-fn context)))
 
+(defn wrap-context-with-configuration [context configuration]
+  (assoc context :configuration configuration))
+
 (defn create-state-context-reporting-thread
   "Creates, starts and returns thread that will on given interval in ms report context state"
   [context reporting-interval-millis]
@@ -186,9 +189,9 @@
                   (.setName (Thread/currentThread) "context-reporting-thread")
                   (try
                     (while
-                       true
-                       ((:context-print-fn context))
-                       (Thread/sleep reporting-interval-millis))
+                        true
+                        ((:context-print-fn context))
+                        (Thread/sleep reporting-interval-millis))
                     (catch InterruptedException e ((:context-print-fn context))))))]
     (.start thread)
     thread))

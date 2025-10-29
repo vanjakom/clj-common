@@ -86,20 +86,33 @@
   (.getCanonicalPath (new java.io.File relative-path)))
 
 (defn list
-  "List paths on given path if directory, if file or doesn't exist empty list is returned"
+  "List paths on given path if directory, if file or doesn't exist empty list is 
+  returned. Files are sorted by name."
   [path]
   (if
     (is-directory path)
-    (map
+    (sort-by
+     path/name
+     (map
       (partial path/child path)
-      (.list (new java.io.File (path/path->string path))))
+      (.list (new java.io.File (path/path->string path)))))
     '()))
 
+#_(run!
+ println
+ (list ["Users" "vanja" "dataset-cloud" "trek-mate" "container-backup" "iphone"]))
+;; [Users vanja dataset-cloud trek-mate container-backup iphone .DS_Store]
+;; [Users vanja dataset-cloud trek-mate container-backup iphone 2024-03-21.xcappdata]
+;; [Users vanja dataset-cloud trek-mate container-backup iphone 2025-01-07.xcappdata]
+;; [Users vanja dataset-cloud trek-mate container-backup iphone 2025-01-21.xcappdata]
+;; [Users vanja dataset-cloud trek-mate container-backup iphone 2025-09-08.xcappdata]
+;; [Users vanja dataset-cloud trek-mate container-backup iphone 2025-10-03.xcappdata]
 
-(.getPath
- (java.nio.file.FileSystems/getDefault)
- "tmp"
- (into-array String ["tmp" "input"]))
+
+#_(.getPath
+   (java.nio.file.FileSystems/getDefault)
+   "tmp"
+   (into-array String ["tmp" "input"]))
 
 (defn link
   "Creates symoblic link"
