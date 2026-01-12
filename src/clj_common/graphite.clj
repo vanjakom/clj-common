@@ -26,6 +26,9 @@
   ([name]
    (tag name nil nil)))
 
+(defn br []
+  "<br>")
+
 (defn script
   [& statement-seq]
   (str
@@ -49,7 +52,7 @@
 
 (defn configure-metric-width
   ([width]
-   (configure-graph-width {} width))
+   (configure-metric-width {} width))
   ([configuration width]
    (assoc configuration :metric-width width)))
 
@@ -70,15 +73,23 @@
    :metric metric
    :name name})
 
+(defn configure-hide-legend [metric]
+  (assoc metric :hide-legend true))
+
+(defn configure-show-legend [metric]
+  (assoc metric :hide-legend false))
+
 (defn render-metric [configuration metric]
   (let [timeframe (or (get configuration :timeframe) "2hours")
         graphite (get configuration :graphite)
-        width (or (get configuration :metric-width) 400)
-        height (or (get configuration :metric-height) 250)]
+        width (or (get configuration :metric-width) 600)
+        height (or (get configuration :metric-height) 375)]
     (tag
      "div"
      {}
      (str
+      (get metric :name)
+      (br)
       (tag
        "img"
        {
@@ -88,13 +99,17 @@
              "&until=now"
              "&width=" width
              "&height=" height
-             "&target=" (get metric :metric)
-             "&title=" (url-encode (get metric :name)))})
+             "&target=" (url-encode (get metric :metric))
+             ;; "&title=" (url-encode (get metric :name))
+             (when-let [hide-legend (get metric :hide-legend)]
+               (str "&hideLegend=" hide-legend)))})
       "\n"
       (tag
        "div"
        {}
-       (get metric :metric))))))
+       (get metric :metric))
+      (br)
+      (br)))))
 
 (defn render [configuration metrics]
   (tag
@@ -113,16 +128,47 @@
       console.log('timeframe:', timeframe);"))
     (tag
      "body"
-     {}
+     {
+      "style" "text-align:center;"}
      (map
       (partial render-metric configuration)
       metrics))]))
 
 ;;  metric construct functions
-(defn keep-last-value [rest]
+(defn fn-keep-last-value [rest]
   (str "keepLastValue(" rest ")"))
 
+(defn fn-group-by-nodes [rest function & nodes]
+  (str
+   "groupByNodes(" rest ",\"" function "\"," (clojure.string/join "," nodes)")"))
+
+(defn fn-highest-average [rest num-of-metrics]
+  (str "highestAverage(" rest "," num-of-metrics ")"))
+
+(defn fn-sum [rest]
+  (str "sum(" rest ")"))
+
+(defn fn-sum-series [rest]
+  (str "sumSeries(" rest ")"))
+
+(defn fn-integral [rest]
+  (str "integral(" rest ")"))
+
+(defn fn-summarize-day [rest]
+  (str "summarize(" rest ",\"1day\", sum)"))
+
+(defn fn-alias-by-node [rest node]
+  (str "aliasByNode(" rest "," node ")"))
+
+(defn fn-current-above-zero [rest]
+  (str "currentAbove(" rest ", 0)"))
+
 ;; metric "type" extract
-(defn m5-rate [metric]
+(defn metric-m5-rate [metric]
   (str metric ".m5_rate"))
 
+(defn metric-mean [metric]
+  (str metric ".mean"))
+
+(defn metric-child [root & child]
+  (clojure.string/join "." (concat root child)))

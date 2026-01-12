@@ -92,10 +92,12 @@
   [input-stream]
   ;; maybe to check if input stream is already reader
   ;; return empty seq on empty input stream, makes difference when using
-  ;; http to distinguish empty 200 from 404 
-  (or
-   (line-seq (input-stream->buffered-reader input-stream))
-   '()))
+  ;; http to distinguish empty 200 from 404
+  ;; 2026012 return nil in case input stream is nil
+  (when (some? input-stream)
+    (or
+     (line-seq (input-stream->buffered-reader input-stream))
+     '())))
 
 (defn input-stream->std-out
   [input-stream]
