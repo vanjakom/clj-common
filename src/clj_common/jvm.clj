@@ -133,12 +133,26 @@
     (.waitFor process)
     (if (= (.exitValue process) 0) is error-is)))
 
+(defn execute-command-and-check
+  "Forks process and executes command with given PWD. Returns input
+  stream of stdout"
+  [pwd command]
+  (let [process (.exec (Runtime/getRuntime)
+                       command
+                       (into-array java.lang.String [])
+                       (new java.io.File pwd))
+        is (.getInputStream process)]
+    ;; wait process to finish to collect output
+    (.waitFor process)
+    (when (.exitValue process)
+      is)))
+
 #_(run!
- println
- (io/input-stream->line-seq
-  (execute-command
-   "/Users/vanja/projects/trek-mate-pins"
-   "git status")))
+   println
+   (io/input-stream->line-seq
+    (execute-command
+     "/Users/vanja/projects/trek-mate-pins"
+     "git status")))
 
 (defn random-uuid [] (.toString (java.util.UUID/randomUUID)))
 

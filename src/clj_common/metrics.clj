@@ -107,22 +107,23 @@
     (.start console-reporter 10 java.util.concurrent.TimeUnit/SECONDS)
     console-reporter))
 
-(defn create-and-attach-servlet-reporter [metrics servlet-port]
-  (let [server (new org.eclipse.jetty.server.Server servlet-port)
-        servlet-context-handler (new org.eclipse.jetty.servlet.ServletContextHandler server "/metrics" false false)]
-    (.setAttribute
-      (.getServletContext servlet-context-handler)
-      com.codahale.metrics.servlets.MetricsServlet/METRICS_REGISTRY
-      (:metrics-registry metrics))
-    (.addServlet
-      servlet-context-handler
-      com.codahale.metrics.servlets.MetricsServlet
-      "/registry")
-    (.addServlet
-      servlet-context-handler
-      com.codahale.metrics.servlets.ThreadDumpServlet
-      "/threads")
-    (.start server)))
+;; metrics compilation fails because of missing jetty class
+;; (defn create-and-attach-servlet-reporter [metrics servlet-port]
+;;   (let [server (new org.eclipse.jetty.server.Server servlet-port)
+;;         servlet-context-handler (new org.eclipse.jetty.servlet.ServletContextHandler server "/metrics" false false)]
+;;     (.setAttribute
+;;       (.getServletContext servlet-context-handler)
+;;       com.codahale.metrics.servlets.MetricsServlet/METRICS_REGISTRY
+;;       (:metrics-registry metrics))
+;;     (.addServlet
+;;       servlet-context-handler
+;;       com.codahale.metrics.servlets.MetricsServlet
+;;       "/registry")
+;;     (.addServlet
+;;       servlet-context-handler
+;;       com.codahale.metrics.servlets.ThreadDumpServlet
+;;       "/threads")
+;;     (.start server)))
 
 (defn create-and-attach-graphite-reporter [metrics graphite-host graphite-port prefix]
   (let [graphite (new com.codahale.metrics.graphite.Graphite graphite-host graphite-port)

@@ -1,4 +1,6 @@
-(defproject com.mungolab/clj-common "0.3.0-SNAPSHOT"
+(defproject
+  com.mungolab/clj-common
+  "0.3.3"
   :description "common functions"
   :url "https://github.com/vanjakom/clj-common"
   :license {:name "Eclipse Public License"
@@ -24,13 +26,22 @@
                  [io.dropwizard.metrics/metrics-core "3.2.2"]
                  [io.dropwizard.metrics/metrics-graphite "3.2.2"]
                  [io.dropwizard.metrics/metrics-servlets "3.2.2"]
-                 [org.eclipse.jetty/jetty-server "9.4.4.v20170414"]
-                 [org.eclipse.jetty/jetty-servlet "9.4.4.v20170414"]
+                 ;; using jetty from ring/ring-jetty-adapter
+                 ;;[org.eclipse.jetty/jetty-server "9.4.4.v20170414"]
+                 ;;[org.eclipse.jetty/jetty-servlet "9.4.4.v20170414"]
 
                  ;; http stack
                  [compojure "1.5.0"]
-                 [ring "1.4.0"]
-                 [ring/ring-json "0.4.0" :exclusions [com.fasterxml.jackson.core/jackson-core]]
+                 [ring/ring-core "1.14.1"]
+                 [ring/ring-jetty-adapter "1.14.1"]
+                 [ring/ring-json "0.5.1"]
+                 [ring/ring-codec "1.3.0"]
+                 [hiccup "2.0.0-RC5"]
+
+                 ;; json
+                 [com.fasterxml.jackson.core/jackson-core "2.14.2"]
+                 [com.fasterxml.jackson.core/jackson-databind "2.14.2"]
+                 [com.fasterxml.jackson.core/jackson-annotations "2.14.2"]
 
                  ;; mail sending
                  [com.draines/postal "2.0.2"]
@@ -42,4 +53,4 @@
                  ;; is it used?
                  [funcool/cats "2.1.0"]
 
-                 [com.mungolab/clj-common-java "0.3.0-SNAPSHOT"]])
+                 [com.mungolab/clj-common-java "0.3.0"]])

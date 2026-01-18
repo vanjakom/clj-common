@@ -1,5 +1,6 @@
 (ns clj-common.git
   (:require
+   [clj-common.context :as context]
    [clj-common.io :as io]
    [clj-common.jvm :as jvm]
    [clj-common.path :as path]))
@@ -8,30 +9,47 @@
 ;; relies on execute-command in jvm
 ;; each command returns status map if successful else nil
 
-(defn status [repo-path]
-  (let [path (path/path->string repo-path)]
-    (println "[STATUS]" path)
-    (let [response (io/input-stream->line-seq
-                    (jvm/execute-command path "git status"))]
-      (println response)
-      (cond
-        (some? (first (filter
-                         #(.contains % "nothing to commit, working tree clean")
-                         response)))
-        {:status :clean}
-        (some? (first (filter
-                       #(.contains % "fatal: not a git repository (or any of the parent directories): .git")
-                       response)))
-        {:status :not-git}
-        
-        :else
-        {:status :diff}))))
+;; 20260112 supporting context output ( for clj-scheduler )
+
+(defn status
+  ([repo-path]
+   (status (context/create-stdout-context) repo-path))
+  ([context repo-path]
+   (let [path (path/path->string repo-path)]
+     (context/trace context (str "[GIT][STATUS] " path))
+     (let [response (io/input-stream->line-seq
+                     (jvm/execute-command path "git status"))]
+       (doseq [line response]
+         (context/trace context (str "[OUT] " line)))
+       (cond
+         (some? (first (filter
+                        #(.contains % "nothing to commit, working tree clean")
+                        response)))
+         {:status :clean}
+         (some? (first (filter
+                        #(.contains % "fatal: not a git repository (or any of the parent directories): .git")
+                        response)))
+         {:status :not-git}
+         
+         :else
+         {:status :diff})))))
+
+(defn pull 
+  ([repo-path]
+   (pull (context/create-stdout-context) repo-path))
+  ([context repo-path]
+   (let [path (path/path->string repo-path)]
+     (context/trace context (str "[GIT][PULL] " path))
+     (let [response (io/input-stream->line-seq
+                     (jvm/execute-command-and-check path "git pull"))]
+       (doseq [line response]
+         (context/trace context (str "[OUT] " line)))
+       response))))
 
 #_(status (path/string->path "/Users/vanja/projects/MaplyProject"))
 #_(status (path/string->path "/Users/vanja/projects/trek-mate-pins"))
 #_(status (path/string->path "/Users/vanja/projects/trek-mate"))
-#_(status (path/string->path "/Users/vanja/projects/classloader-playground"))
-
 #_(io/input-stream->std-out
  (let [path "/Users/vanja/projects/classloader-playground"]
    (jvm/execute-command path "git status")))
+#_(pull (path/string->path "/Users/vanja/projects/trek-mate"))

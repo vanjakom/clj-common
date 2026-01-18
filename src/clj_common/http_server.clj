@@ -52,14 +52,12 @@
         root-path)))
 
 ; stats http server with sample handler on 10000
-;(def
-;  a
-;  (clj-common.http-server/create-server
-;    10000
-;    #'clj-common.http-server/sample-handler))
+#_(clj-common.http-server/create-server
+ 10000
+ #'clj-common.http-server/sample-handler)
+
 
 (declare stop-server)
-
 
 (defn create-server [port handler]
   (logging/report "new code")
