@@ -127,10 +127,11 @@
                        command
                        (into-array java.lang.String [])
                        (new java.io.File pwd))
-        is (.getInputStream process)]
+        is (.getInputStream process)
+        error-is (.getErrorStream process)]
     ;; wait process to finish to collect output
     (.waitFor process)
-    is))
+    (if (= (.exitValue process) 0) is error-is)))
 
 #_(run!
  println
