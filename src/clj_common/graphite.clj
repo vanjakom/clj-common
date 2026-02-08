@@ -163,6 +163,9 @@
 (defn fn-current-above-zero [rest]
   (str "currentAbove(" rest ", 0)"))
 
+(defn fn-exclude [rest pattern]
+  (str "exclude(" rest ",\"" pattern "\")"))
+
 ;; metric "type" extract
 (defn metric-m5-rate [metric]
   (str metric ".m5_rate"))

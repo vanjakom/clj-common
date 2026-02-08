@@ -19,16 +19,24 @@
 (def color-yellow {:red (float 1.0) :green (float 1.0) :blue (float 0.0) :alpha (float 1.0)})
 (def color-magenta {:red (float 1.0) :green (float 0.0) :blue (float 1.0) :alpha (float 1.0)})
 (def color-red {:red (float 1.0) :green (float 0.0) :blue (float 0.0) :alpha (float 1.0)})
+(def color-orange {:red (float 1.0) :green (float 0.65) :blue (float 0.0) :alpha (float 1.0)})
 (def color-transparent {:red (float 1.0) :green (float 1.0) :blue (float 1.0) :alpha (float 0.0)})
 
 (defn random-color [] {:red (rand) :green (rand) :blue (rand) :alpha (float 1.0)})
 
+(def font-default-10 (new java.awt.Font "Monospaced" 0 10))
+(def font-monospace-10 (new java.awt.Font "Monospaced" 0 10))
+
+(defn font [font-name size]
+  (new java.awt.Font font-name 0 size))
+
+
 (defn create-image-context [width height]
   (new
-    java.awt.image.BufferedImage
-    width
-    height
-    java.awt.image.BufferedImage/TYPE_INT_ARGB))
+   java.awt.image.BufferedImage
+   width
+   height
+   java.awt.image.BufferedImage/TYPE_INT_ARGB))
 
 (defn input-stream->image-context [input-stream]
   (ImageIO/read input-stream))
@@ -134,10 +142,34 @@
       (color->awt-color color-transparent)
       nil)))
 
-(defn draw-text [image-context color ^String text x y]
-  (let [graphics (.getGraphics image-context)]
-    (.setColor graphics (color->awt-color color))
-    (.drawString graphics text (int x) (int y))))
+(defn draw-text
+  ([image-context color ^String text x y]
+   (draw-text image-context color text x y font-default-10))
+  ([image-context color ^String text x y font]
+   (let [graphics (.getGraphics image-context)]
+     (.setFont graphics font)
+     (println (.getFont graphics))
+     (.setColor graphics (color->awt-color color))
+     (.drawString graphics text (int x) (int y)))))
+
+#_(let [image-context (create-image-context 600 200)
+      font-monospace (font "DialogInput" 20)
+      font (font "Dialog" 20)]
+  (draw-text image-context color-black "Добар дан!" 10 30 font-monospace)
+  (draw-text image-context color-black "Добар дан!" 10 70 font)
+  (draw-text image-context color-black "ч ћ ш ђ љ њ џ" 10 110)
+  (with-open [os (clj-common.localfs/output-stream ["tmp" "text-write.png"])]
+    (write-png-to-stream image-context os)))
+
+(defn text-width [font text]
+  (let [image (draw/create-image-context 1 1)
+        graphics (.createGraphics image)]
+    (.setFont graphics font)
+    (* (.charWidth (.getFontMetrics graphics) (int \M))
+       (.length text))))
+
+
+
 
 (defn set-point [image-context color x y]
   (.setRGB image-context x y (.getRGB (color->awt-color color))))
