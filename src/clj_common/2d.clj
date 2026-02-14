@@ -1,7 +1,8 @@
 (ns clj-common.2d
   (:import javax.imageio.ImageIO)
   (:require
-   [clj-common.io :as io]))
+   [clj-common.io :as io]
+   [clojure.string]))
 
 ; structures
 ; point
@@ -152,6 +153,28 @@
      (.setColor graphics (color->awt-color color))
      (.drawString graphics text (int x) (int y)))))
 
+(defn draw-text-center
+  ([image-context color ^String text y]
+   (draw-text-center image-context color text y font-default-10))
+  ([image-context color ^String text y font]
+   (let [graphics (.getGraphics image-context)]
+     (.setFont graphics font)
+     (let [font-metrics (.getFontMetrics graphics)
+           text-width (.stringWidth font-metrics text)
+           image-width (.getWidth image-context)
+           x (int (/ (- image-width text-width) 2))]
+       (.setColor graphics (color->awt-color color))
+       (.drawString graphics text x (int y))))))
+
+(defn draw-lines-center
+  ([image-context color line-seq y]
+   (draw-lines-center image-context color line-seq y font-default-10))
+  ([image-context color line-seq y font]
+   (let [font-height (.getSize font)
+         line-spacing (int (+ font-height (/ font-height 2)))]
+     (doseq [[i line] (map-indexed vector line-seq)]
+       (draw-text-center image-context color line (+ y (* i line-spacing)) font)))))
+
 #_(let [image-context (create-image-context 600 200)
       font-monospace (font "DialogInput" 20)
       font (font "Dialog" 20)]
@@ -161,15 +184,39 @@
   (with-open [os (clj-common.localfs/output-stream ["tmp" "text-write.png"])]
     (write-png-to-stream image-context os)))
 
+(defn text-justify [length ^String text]
+  (let [text-length (.length text)
+        padding (- length text-length)]
+    (when (>= text-length length)
+      (println
+       "[clj-common.2d/text-justify] text length higher,"
+       text-length " limit:" length))
+    (cond
+      (<= padding 0) text
+      (.endsWith text ".") (str text (apply str (repeat padding " ")))
+      (.endsWith text " ") (str text (apply str (repeat padding " ")))
+      
+      :else
+      (let [words (clojure.string/split text #" ")
+            gap-count (dec (count words))]
+        (if (<= gap-count 0)
+          (str text (apply str (repeat padding " ")))
+          (let [base-spaces (+ 1 (quot padding gap-count))
+                extra (rem padding gap-count)]
+            (apply str
+                   (map-indexed
+                    (fn [i word]
+                      (if (< i gap-count)
+                        (str word (apply str (repeat (+ base-spaces (if (< i extra) 1 0)) " ")))
+                        word))
+                    words))))))))
+
 (defn text-width [font text]
-  (let [image (draw/create-image-context 1 1)
+  (let [image (create-image-context 1 1)
         graphics (.createGraphics image)]
     (.setFont graphics font)
     (* (.charWidth (.getFontMetrics graphics) (int \M))
        (.length text))))
-
-
-
 
 (defn set-point [image-context color x y]
   (.setRGB image-context x y (.getRGB (color->awt-color color))))
