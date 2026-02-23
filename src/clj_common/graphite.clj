@@ -72,7 +72,9 @@
   {
    :type :metric
    :metric metric
-   :name name})
+   :name name
+   ;; 202260220 by default hide legend ( reported as text )
+   :hide-legend true})
 
 (defn section [name]
   {
@@ -229,6 +231,12 @@
 
 (defn fn-exclude [rest pattern]
   (str "exclude(" rest ",\"" pattern "\")"))
+
+(defn fn-summarize-meter-count-day [count-metric]
+  (str
+   "summarize(nonNegativeDerivative(keepLastValue("
+   count-metric
+   ")), \"1d\",\"sum\",false)"))
 
 ;; metric "type" extract
 (defn metric-m5-rate [metric]
