@@ -199,28 +199,29 @@
        "body"
        {"style" "text-align:center;"}
        (concat
-        [(tag
-          "div"
-          {"style" "text-align:right;"}
-          (concat
-           [(tag
-             "div"
-             {"id" "timeframe-links"
-              "data-timeframes" (clojure.string/join "," default-timeframes)}
-             (interpose
-              " "
-              (map
-               (fn [timeframe]
-                 (if (= timeframe selected-timeframe)
-                   (tag "span" {"data-timeframe" timeframe} timeframe)
-                   (tag
-                    "a"
-                    {"data-timeframe" timeframe
-                     "href" "#"
-                     "onclick" (str "return setTimeframe('" timeframe "');")}
-                    timeframe)))
-               default-timeframes)))]
-           [(br) (br)]))
+         [(tag
+           "div"
+           {"style" "text-align:right;position:fixed;top:0;right:0;background:white;padding:4px;z-index:1000;"}
+           (concat
+            [(tag
+              "div"
+              {"id" "timeframe-links"
+               "data-timeframes" (clojure.string/join "," default-timeframes)}
+              (interpose
+               " "
+               (map
+                (fn [timeframe]
+                  (if (= timeframe selected-timeframe)
+                    (tag "span" {"data-timeframe" timeframe} timeframe)
+                    (tag
+                     "a"
+                     {"data-timeframe" timeframe
+                      "href" "#"
+                      "onclick" (str "return setTimeframe('" timeframe "');")}
+                     timeframe)))
+                default-timeframes)))]
+            [(br) (br)]))
+          (tag "div" {"style" "height:24px;"} "")
          (tag
           "div"
           {"style" "text-align:left;"}
