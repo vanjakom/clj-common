@@ -5,6 +5,9 @@
    [clj-common.io :as io]
    [clj-common.localfs :as fs]))
 
+(def default-timeframes
+  ["30minutes" "1hours" "3hours" "6hours" "24hours" "3days" "7days" "30days"])
+
 (defn indent [value]
   (str "\t" value))
 
@@ -96,7 +99,7 @@
       trimmed)))
 
 (defn render-metric [configuration metric]
-  (let [timeframe (or (get configuration :timeframe) "2hours")
+  (let [timeframe (or (get configuration :timeframe) "3hours")
         graphite (get configuration :graphite)
         width (or (get configuration :metric-width) 600)
         height (or (get configuration :metric-height) 375)
@@ -139,66 +142,126 @@
 (defn render
   "Element could be metric or section."
   [configuration elements]
-  (tag
-   "html"
-   {}
-   [(tag
-     "head"
-     {
-      "title" (or (:name configuration) "Graphite dashboard")}
-     ;; todo, complex, imgs src needs to be rewritten, we wnat simple
-     ;; static html without need for js
-     (script
-      "
-      var params = new URLSearchParams(window.location.search);
-      var timeframe = params.get('timeframe') || '2hours';
-      console.log('timeframe:', timeframe);"))
+  (let [selected-timeframe (or (get configuration :timeframe) "3hours")]
     (tag
-     "body"
-     {
-      "style" "text-align:center;"}
-     (concat
-      [(tag
-        "div"
-        {"style" "text-align:left;"}
+     "html"
+     {}
+     [(tag
+       "head"
+       {"title" (or (:name configuration) "Graphite dashboard")}
+       ;; todo, complex, imgs src needs to be rewritten, we wnat simple
+       ;; static html without need for js
+       (script
+        "
+        var params = new URLSearchParams(window.location.search);
+        var timeframe = params.get('timeframe') || '2hours';
+        console.log('timeframe:', timeframe);
+        function updateTimeframeLinks(selected) {
+          var container = document.getElementById('timeframe-links');
+          if (!container) { return; }
+          var values = (container.getAttribute('data-timeframes') || '').split(',');
+          container.innerHTML = '';
+          values.forEach(function(value) {
+            if (!value) { return; }
+            if (value === selected) {
+              var span = document.createElement('span');
+              span.setAttribute('data-timeframe', value);
+              span.textContent = value;
+              container.appendChild(span);
+            } else {
+              var link = document.createElement('a');
+              link.setAttribute('data-timeframe', value);
+              link.setAttribute('href', '#');
+              link.onclick = function() { return setTimeframe(value); };
+              link.textContent = value;
+              container.appendChild(link);
+            }
+            container.appendChild(document.createTextNode(' '));
+          });
+        }
+        function setTimeframe(selected) {
+          var images = document.getElementsByTagName('img');
+          for (var i = 0; i < images.length; i++) {
+            var img = images[i];
+            if (img.src.indexOf('/render?') === -1) { continue; }
+            try {
+              var url = new URL(img.src);
+              var params = url.searchParams;
+              params.set('from', '-' + selected);
+              url.search = params.toString();
+              img.src = url.toString();
+            } catch (e) {}
+          }
+          updateTimeframeLinks(selected);
+          return false;
+        }"))
+      (tag
+       "body"
+       {"style" "text-align:center;"}
+       (concat
+        [(tag
+          "div"
+          {"style" "text-align:right;"}
+          (concat
+           [(tag
+             "div"
+             {"id" "timeframe-links"
+              "data-timeframes" (clojure.string/join "," default-timeframes)}
+             (interpose
+              " "
+              (map
+               (fn [timeframe]
+                 (if (= timeframe selected-timeframe)
+                   (tag "span" {"data-timeframe" timeframe} timeframe)
+                   (tag
+                    "a"
+                    {"data-timeframe" timeframe
+                     "href" "#"
+                     "onclick" (str "return setTimeframe('" timeframe "');")}
+                    timeframe)))
+               default-timeframes)))]
+           [(br) (br)]))
+         (tag
+          "div"
+          {"style" "text-align:left;"}
+          (map
+           (fn [element]
+             (str
+              (when (= (:type element) :section)
+                (br))
+              (cond
+                (= (:type element) :metric)
+                (tag
+                 "a"
+                 {"href" (str "#" (metric-anchor (get element :name)))}
+                 (get element :name))
+
+                (= (:type element) :section)
+                (get element :name)
+
+                :else
+                "")
+              (br)))
+           (filter
+            (fn [element]
+              (or
+               (= (:type element) :metric)
+               (= (:type element) :section)))
+            elements)))
+         (br)
+         (br)]
         (map
          (fn [element]
-           (str
-            (when (= (:type element) :section)
-              (br))
-            (cond
-              (= (:type element) :metric)
-              (tag
-               "a"
-               {"href" (str "#" (metric-anchor (get element :name)))}
-               (get element :name))
-
-              (= (:type element) :section)
-              (get element :name)
-
-              :else
-              "")
-            (br)))
-         (filter
-          (fn [element]
-            (or
+           (cond
              (= (:type element) :metric)
-             (= (:type element) :section)))
-          elements)))
-       (br)
-       (br)]
-      (map
-       (fn [element]
-         (cond
-           (= (:type element) :metric)
-           (render-metric configuration element)
+             (render-metric configuration element)
 
-           (= (:type element) :section)
-           (render-section configuration element)
+             (= (:type element) :section)
+             (render-section configuration element)
 
-           :else
-           (br)))
-       elements)))]))
+             :else
+             (br)))
+         elements)))])))
 
 ;;  metric construct functions
 (defn fn-keep-last-value [rest]
