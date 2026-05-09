@@ -6,7 +6,7 @@
    [clj-common.localfs :as fs]))
 
 (def default-timeframes
-  ["30minutes" "1hours" "3hours" "6hours" "24hours" "3days" "7days" "30days"])
+  ["30minutes" "1hours" "3hours" "6hours" "24hours" "3days" "7days" "14days" "30days"])
 
 (defn indent [value]
   (str "\t" value))

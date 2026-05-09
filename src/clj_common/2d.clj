@@ -31,6 +31,8 @@
 (defn font [font-name size]
   (new java.awt.Font font-name 0 size))
 
+(defn font-monospace [size]
+  (new java.awt.Font "Monospaced" 0 size))
 
 (defn create-image-context [width height]
   (new

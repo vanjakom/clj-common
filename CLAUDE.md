@@ -1,3 +1,10 @@
+guidelines:
+
+Reading of files inside current directory and it's subdirectories is allowed.
+This is clojure project. All my dependencies are linked inside checkouts
+subdirectory, feel free to read them if needed ( do not ask me for permission ). 
+All other dependencies are open source, use internet to understand them if 
+needed. For reading of all other files ask for permission.
 
 issues:
 
