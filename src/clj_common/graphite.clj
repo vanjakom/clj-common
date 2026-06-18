@@ -6,7 +6,8 @@
    [clj-common.localfs :as fs]))
 
 (def default-timeframes
-  ["30minutes" "1hours" "3hours" "6hours" "24hours" "3days" "7days" "14days" "30days"])
+  ["30minutes" "1hours" "3hours" "6hours" "24hours" "3days" "7days"
+   "14days" "30days" "3months"])
 
 (defn indent [value]
   (str "\t" value))
@@ -84,6 +85,11 @@
    :type :section
    :name name})
 
+(defn note [& line-seq]
+  {
+   :type :note
+   :note line-seq})
+
 (defn configure-hide-legend [metric]
   (assoc metric :hide-legend true))
 
@@ -115,6 +121,8 @@
       (tag
        "img"
        {
+        "width" width
+        "height" height
         "src"
         (str graphite "/render?"
              "from=-" timeframe
@@ -123,7 +131,9 @@
              "&height=" height
              "&target=" (url-encode (get metric :metric))
              ;; "&title=" (url-encode (get metric :name))
-             (when-let [hide-legend (get metric :hide-legend)]
+             (let [hide-legend (or
+                                (get metric :hide-legend)
+                                "false")]
                (str "&hideLegend=" hide-legend)))})
       "\n"
       (tag
@@ -138,6 +148,14 @@
    "div"
    {"style" "font-size:1.2em;font-weight:bold;"}
    (tag "a" {"id" (metric-anchor (get section :name))} (get section :name))))
+
+(defn render-note [configuration note]
+  (tag
+   "div"
+   {}
+   (concat
+    (interpose (br) (:note note))
+    [(br)])))
 
 (defn render
   "Element could be metric or section."
@@ -199,29 +217,29 @@
        "body"
        {"style" "text-align:center;"}
        (concat
-         [(tag
-           "div"
-           {"style" "text-align:right;position:fixed;top:0;right:0;background:white;padding:4px;z-index:1000;"}
-           (concat
-            [(tag
-              "div"
-              {"id" "timeframe-links"
-               "data-timeframes" (clojure.string/join "," default-timeframes)}
-              (interpose
-               " "
-               (map
-                (fn [timeframe]
-                  (if (= timeframe selected-timeframe)
-                    (tag "span" {"data-timeframe" timeframe} timeframe)
-                    (tag
-                     "a"
-                     {"data-timeframe" timeframe
-                      "href" "#"
-                      "onclick" (str "return setTimeframe('" timeframe "');")}
-                     timeframe)))
-                default-timeframes)))]
-            [(br) (br)]))
-          (tag "div" {"style" "height:24px;"} "")
+        [(tag
+          "div"
+          {"style" "text-align:right;position:fixed;top:0;right:0;background:white;padding:4px;z-index:1000;"}
+          (concat
+           [(tag
+             "div"
+             {"id" "timeframe-links"
+              "data-timeframes" (clojure.string/join "," default-timeframes)}
+             (interpose
+              " "
+              (map
+               (fn [timeframe]
+                 (if (= timeframe selected-timeframe)
+                   (tag "span" {"data-timeframe" timeframe} timeframe)
+                   (tag
+                    "a"
+                    {"data-timeframe" timeframe
+                     "href" "#"
+                     "onclick" (str "return setTimeframe('" timeframe "');")}
+                    timeframe)))
+               default-timeframes)))]
+           [(br) (br)]))
+         (tag "div" {"style" "height:24px;"} "")
          (tag
           "div"
           {"style" "text-align:left;"}
@@ -259,6 +277,9 @@
 
              (= (:type element) :section)
              (render-section configuration element)
+
+             (= (:type element) :note)
+             (render-note configuration element)
 
              :else
              (br)))
