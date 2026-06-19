@@ -109,7 +109,16 @@
         graphite (get configuration :graphite)
         width (or (get configuration :metric-width) 600)
         height (or (get configuration :metric-height) 375)
-        anchor (metric-anchor (get metric :name))]
+        anchor (metric-anchor (get metric :name))
+        image-url (fn [tf]
+                    (str graphite "/render?"
+                         "from=-" tf
+                         "&until=now"
+                         "&width=" width
+                         "&height=" height
+                         "&target=" (url-encode (get metric :metric))
+                         (let [hide-legend (or (get metric :hide-legend) "false")]
+                           (str "&hideLegend=" hide-legend))))]
     (tag
      "div"
       {}
@@ -117,24 +126,26 @@
       (tag "a" {"id" anchor} (get metric :name))
       " "
       (tag "a" {"href" (str "#" anchor)} "share")
+      " ("
+      (clojure.string/join
+       " "
+       (map
+        (fn [tf]
+          (let [label (-> tf
+                          (clojure.string/replace "hours" "h")
+                          (clojure.string/replace "days" "d")
+                          (clojure.string/replace "months" "m")
+                          (clojure.string/replace "minutes" "min"))]
+            (tag "a" {"href" (image-url tf) "target" "_blank"} label)))
+        default-timeframes))
+      ")"
       (br)
       (tag
        "img"
        {
         "width" width
         "height" height
-        "src"
-        (str graphite "/render?"
-             "from=-" timeframe
-             "&until=now"
-             "&width=" width
-             "&height=" height
-             "&target=" (url-encode (get metric :metric))
-             ;; "&title=" (url-encode (get metric :name))
-             (let [hide-legend (or
-                                (get metric :hide-legend)
-                                "false")]
-               (str "&hideLegend=" hide-legend)))})
+        "src" (image-url timeframe)})
       "\n"
       (tag
        "div"
@@ -174,6 +185,9 @@
         var params = new URLSearchParams(window.location.search);
         var timeframe = params.get('timeframe') || '2hours';
         console.log('timeframe:', timeframe);
+        function abbreviate(tf) {
+          return tf.replace('hours','h').replace('days','d').replace('months','m').replace('minutes','min');
+        }
         function updateTimeframeLinks(selected) {
           var container = document.getElementById('timeframe-links');
           if (!container) { return; }
@@ -184,14 +198,14 @@
             if (value === selected) {
               var span = document.createElement('span');
               span.setAttribute('data-timeframe', value);
-              span.textContent = value;
+              span.textContent = abbreviate(value);
               container.appendChild(span);
             } else {
               var link = document.createElement('a');
               link.setAttribute('data-timeframe', value);
               link.setAttribute('href', '#');
               link.onclick = function() { return setTimeframe(value); };
-              link.textContent = value;
+              link.textContent = abbreviate(value);
               container.appendChild(link);
             }
             container.appendChild(document.createTextNode(' '));
@@ -229,14 +243,19 @@
               " "
               (map
                (fn [timeframe]
-                 (if (= timeframe selected-timeframe)
-                   (tag "span" {"data-timeframe" timeframe} timeframe)
-                   (tag
-                    "a"
-                    {"data-timeframe" timeframe
-                     "href" "#"
-                     "onclick" (str "return setTimeframe('" timeframe "');")}
-                    timeframe)))
+                 (let [label (-> timeframe
+                                 (clojure.string/replace "hours" "h")
+                                 (clojure.string/replace "days" "d")
+                                 (clojure.string/replace "months" "m")
+                                 (clojure.string/replace "minutes" "min"))]
+                   (if (= timeframe selected-timeframe)
+                     (tag "span" {"data-timeframe" timeframe} label)
+                     (tag
+                      "a"
+                      {"data-timeframe" timeframe
+                       "href" "#"
+                       "onclick" (str "return setTimeframe('" timeframe "');")}
+                      label))))
                default-timeframes)))]
            [(br) (br)]))
          (tag "div" {"style" "height:24px;"} "")
