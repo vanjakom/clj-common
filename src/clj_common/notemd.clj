@@ -55,10 +55,14 @@
    :content content})
 
 (defn tags [note] (:tags note))
+(defn header [note] (:header note))
 (defn content [note ] (:content note))
 
 (defn update-tags [note tags]
   (assoc note :tags tags))
+
+(defn update-header [note header]
+  (assoc note :header header))
 
 (defn read-notes [is default-tags]
   (loop [lines (io/input-stream->line-seq is)
