@@ -54,6 +54,12 @@
    :header header
    :content content})
 
+(defn tags [note] (:tags note))
+(defn content [note ] (:content note))
+
+(defn update-tags [note tags]
+  (assoc note :tags tags))
+
 (defn read-notes [is default-tags]
   (loop [lines (io/input-stream->line-seq is)
          notes []
@@ -222,3 +228,17 @@
         search-tags))))
    dataset))
 
+(defn prepare-note-github [note]
+  (update-in
+   note
+   [:content]
+   (fn [content]
+     (let [line-seq (.split content "\n")]
+       (clojure.string/join
+        "\n"
+        (map
+         (fn [line]
+           (if (.endsWith line "  ")
+             line
+             (str line "  ")))
+         line-seq))))))
