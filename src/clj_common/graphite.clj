@@ -72,6 +72,12 @@
   ([configuration timeframe]
    (assoc configuration :timeframe timeframe)))
 
+(defn configure-default-timeframes
+  ([timeframes]
+   (configure-default-timeframes {} timeframes))
+  ([configuration timeframes]
+   (assoc configuration :default-timeframes timeframes)))
+
 (defn metric [metric name]
   {
    :type :metric
@@ -106,6 +112,9 @@
 
 (defn render-metric [configuration metric]
   (let [timeframe (or (get configuration :timeframe) "3hours")
+        default-timeframes (or
+                            (get configuration :default-timeframes)
+                            default-timeframes)
         graphite (get configuration :graphite)
         width (or (get configuration :metric-width) 600)
         height (or (get configuration :metric-height) 375)
@@ -171,7 +180,8 @@
 (defn render
   "Element could be metric or section."
   [configuration elements]
-  (let [selected-timeframe (or (get configuration :timeframe) "3hours")]
+  (let [selected-timeframe (or (get configuration :timeframe) "3hours")
+        default-timeframes (or (get configuration :default-timeframes) default-timeframes)]
     (tag
      "html"
      {}

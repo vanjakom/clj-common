@@ -132,7 +132,15 @@
   (let [configuration (context/configuration context)
         path (get configuration :path)
         output-path (get configuration :output-path)
-        process-fn (get configuration :process-fn)]
+        process-fn (get configuration :process-fn)
+        ;; 20260811
+        ;; set of lines to add at beginning of file, useful for exports
+        ;; in case header or default-tags are used add "[notemd]   " as first
+        ;; line, take a look at
+        ;; https://github.com/vanjakom/notes-viewer/blob/master/notemd-definition.md
+        header (get configuration :header)
+        ;; list of tags that are used on whole document
+        default-tags (get configuration :default-tags)]
     (context/trace context (str "processing: " path))
     (context/trace context (str "writing to: " output-path))
     (with-open [is (fs/input-stream path)
@@ -140,12 +148,11 @@
       ;; copy with modifications of read-notes
       (let [write-note-fn (fn [note]
                             ;; writing header instead of serializing tags
-                            (io/write-line
-                             os
-                             (:header note))
-                            (io/write-line
-                             os
-                             (:content note)))]
+                            ;; this requires tag manipulation of output in
+                            ;; headers
+                            (io/write-line os (:header note))
+                            (io/write-line os (:content note))
+                            (io/write-line os ""))]
         (loop [lines (io/input-stream->line-seq is)
                tags #{}
                buffer []]

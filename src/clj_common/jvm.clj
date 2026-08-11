@@ -190,6 +190,9 @@
     java-hash-map))
 
 (defn java-version []
+  ;; alternative
+  #_(System/getProperty "java.version")
+  
   (System/getProperty "java.vm.specification.version"))
 
 #_(java-version) ;; "21"
