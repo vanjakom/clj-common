@@ -47,6 +47,17 @@
 #_(parse-tags "# #20240917 #disha geospatial") ;; #{"#20240917" "#disha"}
 #_(parse-tags "# #a #b c d #e") ;; #{"#a" "#b" "#e"}
 
+;; 20260811
+;; support for reading / writing of notemd header, tags declared with
+;; [tag:#tag] apply to whole document, take a look at
+;; https://github.com/vanjakom/notes-viewer/blob/master/notemd-definition.md
+(defn parse-header-tag [line]
+  (when (and (.startsWith line "[tag:") (.endsWith line "]"))
+    (.substring line 5 (dec (count line)))))
+
+(defn extract-header-tags [lines]
+  (into #{} (filter some? (map parse-header-tag lines))))
+
 (defn create-note [tags header content]
   {
    :id (uuid)
@@ -65,14 +76,33 @@
   (assoc note :header header))
 
 (defn read-notes [is default-tags]
+  ;; claude
+  ;; buffer accumulates lines of whatever comes before the next "# " line.
+  ;; on hitting a "# " line ( note or section start ) three cases arise:
+  ;; - buffer is empty ( first line of file is already "# " ) - nothing to
+  ;;   flush, note header ( "# " itself ) is skipped
+  ;; - buffer's first line starts with "# " - buffer holds a finished note,
+  ;;   flush it via create-note, applying default-tags to both its tag set
+  ;;   and, when title is long enough, into its rendered header text
+  ;; - otherwise buffer holds the notemd preamble ( [notemd], [tag:#tag]
+  ;;   lines and free text comments before the first note ) - not a note,
+  ;;   so instead of flushing it, pull any [tag:#tag] declarations out of it
+  ;;   and fold them into default-tags for the rest of the file
+  ;; in all cases the just read "# " line becomes the start of the next
+  ;; buffer, carried until the following "# " line repeats the decision
   (loop [lines (io/input-stream->line-seq is)
          notes []
          tags #{}
+         default-tags default-tags
          buffer []]
     (if-let [line (first lines)]
       (if (.startsWith line "# ")
         (let [new-tags (parse-tags line)]
-          (if (not (empty? buffer))
+          (cond
+            (empty? buffer)
+            (recur (rest lines) notes new-tags default-tags [])
+
+            (.startsWith (first buffer) "# ")
             (recur
              (rest lines)
              (conj
@@ -91,18 +121,27 @@
                  (first buffer))
                (clojure.string/join "\n" (rest buffer))))
              new-tags
+             default-tags
              [line])
+
+            ;; 20260811
+            ;; buffer holds notemd header ( [notemd], [tag:#tag] lines and
+            ;; free text comments ) before first note, not a note itself,
+            ;; extract default tags declared there
+            :else
             (recur
              (rest lines)
              notes
              new-tags
-             [])))
+             (into default-tags (extract-header-tags buffer))
+             [line])))
         (recur
          (rest lines)
          notes
          tags
+         default-tags
          (conj buffer line)))
-      (if (not (empty? buffer))
+      (if (and (not (empty? buffer)) (.startsWith (first buffer) "# "))
         (conj
          notes
          (create-note
@@ -135,7 +174,7 @@
         process-fn (get configuration :process-fn)
         ;; 20260811
         ;; set of lines to add at beginning of file, useful for exports
-        ;; in case header or default-tags are used add "[notemd]   " as first
+        ;; in case header or default-tags are used add "[notemd]" as first
         ;; line, take a look at
         ;; https://github.com/vanjakom/notes-viewer/blob/master/notemd-definition.md
         header (get configuration :header)
@@ -145,6 +184,14 @@
     (context/trace context (str "writing to: " output-path))
     (with-open [is (fs/input-stream path)
                 os (fs/output-stream output-path)]
+      (when (or (not (empty? default-tags)) (not (empty? header)))
+        (io/write-line os "[notemd]")
+        (doseq [tag (sort default-tags)]
+          (io/write-line os (str "[tag:" tag "]")))
+        (when (not (empty? header))
+          (doseq [header-line (clojure.string/split header #"\n")]
+            (io/write-line os header-line)))
+        (io/write-line os ""))
       ;; copy with modifications of read-notes
       (let [write-note-fn (fn [note]
                             ;; writing header instead of serializing tags
@@ -159,7 +206,11 @@
           (if-let [line (first lines)]
             (if (.startsWith line "# ")
               (let [new-tags (parse-tags line)]
-                (if (not (empty? buffer))
+                (cond
+                  (empty? buffer)
+                  (recur (rest lines) new-tags [])
+
+                  (.startsWith (first buffer) "# ")
                   (let [note (process-fn
                               (create-note
                                tags
@@ -170,15 +221,18 @@
                      (rest lines)
                      new-tags
                      [line]))
+
+                  ;; buffer holds notemd header, not a note itself
+                  :else
                   (recur
                    (rest lines)
                    new-tags
-                   [])))
+                   [line])))
               (recur
                (rest lines)
                tags
                (conj buffer line)))
-            (if (not (empty? buffer))
+            (when (and (not (empty? buffer)) (.startsWith (first buffer) "# "))
               (let [note (process-fn
                           (create-note
                            tags
