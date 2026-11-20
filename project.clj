@@ -2,9 +2,8 @@
   com.mungolab/clj-common
   "0.3.3"
   :description "common functions"
-  :url "https://github.com/vanjakom/clj-common"
-  :license {:name "Eclipse Public License"
-            :url "http://www.eclipse.org/legal/epl-v10.html"}
+  :license {:name "MIT License"
+            :url "https://opensource.org/license/mit"}
   :deploy-repositories [
                         ["clojars" {
                                     :url "https://clojars.org/repo"
