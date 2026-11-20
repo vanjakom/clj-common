@@ -50,7 +50,7 @@
 ;; 20260811
 ;; support for reading / writing of notemd header, tags declared with
 ;; [tag:#tag] apply to whole document, take a look at
-;; https://github.com/vanjakom/notes-viewer/blob/master/notemd-definition.md
+;; https://github.com/vanjakom/notemd/blob/main/notemd.md
 (defn parse-header-tag [line]
   (when (and (.startsWith line "[tag:") (.endsWith line "]"))
     (.substring line 5 (dec (count line)))))
@@ -176,7 +176,7 @@
         ;; set of lines to add at beginning of file, useful for exports
         ;; in case header or default-tags are used add "[notemd]" as first
         ;; line, take a look at
-        ;; https://github.com/vanjakom/notes-viewer/blob/master/notemd-definition.md
+        ;; https://github.com/vanjakom/notemd/blob/main/notemd.md
         header (get configuration :header)
         ;; list of tags that are used on whole document
         default-tags (get configuration :default-tags)
