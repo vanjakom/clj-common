@@ -45,4 +45,6 @@
       (println "[request]" namespace path)
       ((get (deref mapping) namespace) path)))))
 
-(server/create-server 7080 handler)
+;; #_ on purpose: requiring this namespace used to start a server as a side
+;; effect, on a port blawor's deamon-server also uses. evaluate it by hand
+#_(server/create-server 7080 handler)

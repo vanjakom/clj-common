@@ -10,7 +10,11 @@
     [clj-common.ring-middleware :as ring-middleware]))
 
 
-(def servers (atom {}))
+;; defonce, not def: reloading this namespace with a plain def resets the map
+;; and orphans whatever is already running - create-server then finds no old
+;; handle, never stops it, and the old jetty keeps its socket. that is easy to
+;; miss because the new server does start, so it looks like the reload worked
+(defonce servers (atom {}))
 
 (def sample-handler
   (compojure.core/routes
@@ -59,50 +63,71 @@
 
 (declare stop-server)
 
-(defn create-server [port handler]
-  (logging/report "new code")
-  (if-let [old-handle (get @servers port)]
-    (do
-      (logging/report {:fn 'clj-common.http-server/create-server
-                       :port port
-                       :message "stopped old server"})
-      (stop-server old-handle)))
+;; servers started here are desktop tools, meant to be reached from this
+;; machine only. ring binds every interface when :host is left unset, which
+;; puts them on the local network: on a cafe or conference wifi anyone able
+;; to reach the machine can read whatever they serve, and there is no
+;; authentication anywhere in this stack
+;;
+;; pass {:host "0.0.0.0"} deliberately for the rare server that has to answer
+;; another device, a phone on the same wifi for instance
+(def default-host "127.0.0.1")
 
-  (let [server-handle (ring.adapter.jetty/run-jetty
-                        handler
-                        {
-                          :port port
+(defn create-server
+  ([port handler]
+   (create-server port handler nil))
+  ([port handler {:keys [host] :or {host default-host}}]
+   (logging/report "new code")
+   (if-let [old-handle (get @servers port)]
+     (do
+       (logging/report {:fn 'clj-common.http-server/create-server
+                        :port port
+                        :message "stopped old server"})
+       (stop-server old-handle)))
+
+   (let [server-handle (ring.adapter.jetty/run-jetty
+                         handler
+                         {
+                           :host host
+                           :port port
+                           :join? false})]
+     (logging/report {:fn 'clj-common.http-server/create-server
+                      :port port
+                      :host host
+                      :message "started server"})
+     (swap! servers assoc port server-handle)
+     server-handle)))
+
+(defn create-https-server
+  ([port keystore-file-name keystore-password handler]
+   (create-https-server port keystore-file-name keystore-password handler nil))
+  ([port keystore-file-name keystore-password handler
+    {:keys [host] :or {host default-host}}]
+   (logging/report "new code")
+   (if-let [old-handle (get @servers port)]
+     (do
+       (logging/report {:fn 'clj-common.http-server/create-server
+                        :port port
+                        :message "stopped old server"})
+       (stop-server old-handle)))
+
+   (let [server-handle (ring.adapter.jetty/run-jetty
+                         handler
+                         {
+                          :ssl true
+                          :host host
+                          :ssl-port port
+                          :keystore keystore-file-name
+                          :key-password keystore-password
+                          :truststore keystore-file-name
+                          :trust-password keystore-password
                           :join? false})]
-    (logging/report {:fn 'clj-common.http-server/create-server
-                     :port port
-                     :message "started server"})
-    (swap! servers assoc port server-handle)
-    server-handle))
-
-(defn create-https-server [port keystore-file-name keystore-password handler]
-  (logging/report "new code")
-  (if-let [old-handle (get @servers port)]
-    (do
-      (logging/report {:fn 'clj-common.http-server/create-server
-                       :port port
-                       :message "stopped old server"})
-      (stop-server old-handle)))
-
-  (let [server-handle (ring.adapter.jetty/run-jetty
-                        handler
-                        {
-                         :ssl true
-                         :ssl-port port
-                         :keystore keystore-file-name
-                         :key-password keystore-password
-                         :truststore keystore-file-name
-                         :trust-password keystore-password
-                          :join? false})]
-    (logging/report {:fn 'clj-common.http-server/create-server
-                     :port port
-                     :message "started server"})
-    (swap! servers assoc port server-handle)
-    server-handle))
+     (logging/report {:fn 'clj-common.http-server/create-server
+                      :port port
+                      :host host
+                      :message "started server"})
+     (swap! servers assoc port server-handle)
+     server-handle)))
 
 (comment
   (create-server 7090 sample-handler)
