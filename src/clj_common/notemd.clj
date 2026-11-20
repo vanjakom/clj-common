@@ -100,7 +100,7 @@
         (let [new-tags (parse-tags line)]
           (cond
             (empty? buffer)
-            (recur (rest lines) notes new-tags default-tags [])
+            (recur (rest lines) notes new-tags default-tags [line])
 
             (.startsWith (first buffer) "# ")
             (recur
@@ -179,12 +179,17 @@
         ;; https://github.com/vanjakom/notes-viewer/blob/master/notemd-definition.md
         header (get configuration :header)
         ;; list of tags that are used on whole document
-        default-tags (get configuration :default-tags)]
+        default-tags (get configuration :default-tags)
+        ;; explicit header / default-tags replace whatever preamble the
+        ;; source file has, otherwise the original preamble ( content
+        ;; before the first note ) has to be preserved verbatim, not
+        ;; silently dropped
+        has-explicit-header (or (not (empty? default-tags)) (not (empty? header)))]
     (context/trace context (str "processing: " path))
     (context/trace context (str "writing to: " output-path))
     (with-open [is (fs/input-stream path)
                 os (fs/output-stream output-path)]
-      (when (or (not (empty? default-tags)) (not (empty? header)))
+      (when has-explicit-header
         (io/write-line os "[notemd]")
         (doseq [tag (sort default-tags)]
           (io/write-line os (str "[tag:" tag "]")))
@@ -199,7 +204,11 @@
                             ;; headers
                             (io/write-line os (:header note))
                             (io/write-line os (:content note))
-                            (io/write-line os ""))]
+                            (io/write-line os ""))
+            write-preamble-fn (fn [buffer-lines]
+                                 (when (and (not has-explicit-header) (seq buffer-lines))
+                                   (doseq [buffer-line buffer-lines]
+                                     (io/write-line os buffer-line))))]
         (loop [lines (io/input-stream->line-seq is)
                tags #{}
                buffer []]
@@ -208,7 +217,7 @@
               (let [new-tags (parse-tags line)]
                 (cond
                   (empty? buffer)
-                  (recur (rest lines) new-tags [])
+                  (recur (rest lines) new-tags [line])
 
                   (.startsWith (first buffer) "# ")
                   (let [note (process-fn
@@ -222,12 +231,16 @@
                      new-tags
                      [line]))
 
-                  ;; buffer holds notemd header, not a note itself
+                  ;; buffer holds notemd preamble, not a note itself,
+                  ;; preserve it verbatim unless an explicit header /
+                  ;; default-tags was given to replace it with
                   :else
-                  (recur
-                   (rest lines)
-                   new-tags
-                   [line])))
+                  (do
+                    (write-preamble-fn buffer)
+                    (recur
+                     (rest lines)
+                     new-tags
+                     [line]))))
               (recur
                (rest lines)
                tags
@@ -307,3 +320,110 @@
              line
              (str line "  ")))
          line-seq))))))
+
+(defn- html-escape [text]
+  (->
+   text
+   (clojure.string/replace "&" "&amp;")
+   (clojure.string/replace "<" "&lt;")
+   (clojure.string/replace ">" "&gt;")))
+
+(defn- html-linkify [text]
+  (clojure.string/replace
+   text
+   #"https?://\S+"
+   (fn [url] (str "<a href=\"" url "\" target=\"_blank\">" url "</a>"))))
+
+(defn header->title
+  "Strips leading # marker and any #tag / @tag tokens from header line,
+  keeping only display title"
+  [header]
+  (->>
+   (clojure.string/split header #" ")
+   (remove #(or (.startsWith % "#") (.startsWith % "@")))
+   (clojure.string/join " ")))
+
+(defn- header->title-html
+  "header->title wrapped as <h1>"
+  [header]
+  (str "<h1>" (html-escape (header->title header)) "</h1>\n"))
+
+(defn- content->html
+  "Renders note content as html, plain lines are escaped and linkified
+  with a <br> after each, lines fenced with ``` on their own become a
+  single <pre> block, escaped but not linkified"
+  [content]
+  (loop [lines (clojure.string/split content #"\n" -1)
+         in-code false
+         html ""]
+    (if-let [line (first lines)]
+      (cond
+        (= (clojure.string/trim line) "```")
+        (recur
+         (rest lines)
+         (not in-code)
+         (str html (if in-code "</pre>\n" "<pre class=\"code-block\">")))
+
+        in-code
+        (recur (rest lines) in-code (str html (html-escape line) "\n"))
+
+        :else
+        (recur
+         (rest lines)
+         in-code
+         (str html (html-linkify (html-escape line)) "<br>\n")))
+      html)))
+
+(defn prepare-note-html
+  "Renders note as a plain html string: header becomes an <h1> title ( #
+  marker and any tags stripped ), content is html escaped, plain text
+  lines get linkified and <br> separated, ```fenced``` lines become a
+  single <pre class=\"code-block\"> block. configuration is a map of
+  options, reserved for future use, currently none are read"
+  [configuration note]
+  (str
+   (header->title-html (:header note))
+   (content->html (:content note))))
+
+(defn notes->html
+  "Renders given notes as a single, self contained html page: monospace
+  font, fenced ```code``` blocks shown in a bordered box, styled to look
+  similar to a github rendered markdown page. configuration is a map of
+  options, reserved for future use, currently none are read, passed
+  through to prepare-note-html. Returns html as a string, caller is
+  responsible for writing it out"
+  [configuration notes]
+  (str
+   "<html>\n"
+   "<head>\n"
+   "<meta charset=\"UTF-8\" />\n"
+   "<style>\n"
+   "body {font-family: monospace; max-width: 900px; margin: 40px auto; padding: 0 20px;}\n"
+   ".code-block {background: #f6f8fa; border: 1px solid #d0d7de; border-radius: 6px; padding: 16px; overflow-x: auto;}\n"
+   "</style>\n"
+   "</head>\n"
+   "<body>\n"
+   (apply
+    str
+    (map
+     (fn [note]
+       (str "<div class=\"note\">\n" (prepare-note-html configuration note) "\n</div>\n"))
+     notes))
+   "</body>\n"
+   "</html>\n"))
+
+(defn notes-path->html
+  "Job wrapper around notes->html: reads notes file on path given in
+  configuration and writes it, rendered as a single html page, to
+  output-path given in configuration"
+  [context]
+  (let [configuration (context/configuration context)
+        path (get configuration :path)
+        output-path (get configuration :output-path)]
+    (context/trace context (str "rendering: " path))
+    (context/trace context (str "writing to: " output-path))
+    (let [notes (with-open [is (fs/input-stream path)]
+                  (read-notes is #{}))]
+      (with-open [os (fs/output-stream output-path)]
+        (io/write-string os (notes->html {} notes))))
+    (context/trace context "rendering finished")))
